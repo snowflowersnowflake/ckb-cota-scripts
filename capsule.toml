@@ -1,0 +1,13 @@
+version = "0.7.1"
+deployment = "deployment.toml"
+[rust]
+workspace_dir = "contracts"
+toolchain = "nightly-2021-08-16"
+
+[[contracts]]
+name = "cota-type"
+template_type = "Rust"
+
+[[contracts]]
+name = "registry-type"
+template_type = "Rust"
