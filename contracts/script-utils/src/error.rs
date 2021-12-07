@@ -7,8 +7,17 @@ pub enum Error {
     ItemMissing,
     LengthNotEnough,
     Encoding,
-    // Add customized errors here...
-    MyError,
+    TypeArgsInvalid = 5,
+    VersionInvalid,
+    GroupInputWitnessNoneError,
+    WitnessTypeParseError,
+    SMTProofVerifyFailed,
+    RegistryCellPositionError,
+    RegistryCellSMTRootError,
+    RegistryCoTANFTExistError,
+    RegistryDataInvalid,
+    RegistryKeysNotEqualLockHashes,
+    RegistryCellsCountError,
 }
 
 impl From<SysError> for Error {
@@ -23,4 +32,3 @@ impl From<SysError> for Error {
         }
     }
 }
-

@@ -1,5 +1,5 @@
 [workspace]
-members = ["cota-type", "registry-type", "tests"]
+members = ["cota-type", "registry-type", "script-utils", "tests"]
 
 [profile.release]
 overflow-checks = true

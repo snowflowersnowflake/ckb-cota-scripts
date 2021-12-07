@@ -59,12 +59,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95916998c798756098a4eb1b3f2cd510659705a9817bf203d61abd30fbec3e7b"
 
 [[package]]
+name = "blake2b-ref"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88756126a7634ad9c13ed0a6da9aa3376a6b7000eb5fcdbb89d153196326bbcd"
+
+[[package]]
 name = "blake2b-rs"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e35e362830ef90ecea16f09b21b75d22d33a8562a679c74ab4f4fa49b4fcb87"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "blake2b-rs"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a89a8565807f21b913288968e391819e7f9b2f0f46c7b89549c051cccf3a2771"
+dependencies = [
+ "cc",
+ "cty",
 ]
 
 [[package]]
@@ -293,8 +309,8 @@ version = "0.100.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df37898d25ee742d94857cb2b41090e59b270eeb1f3e4b8a7422f53ea0e98364"
 dependencies = [
- "blake2b-ref",
- "blake2b-rs",
+ "blake2b-ref 0.2.1",
+ "blake2b-rs 0.1.5",
 ]
 
 [[package]]
@@ -307,6 +323,16 @@ dependencies = [
  "faster-hex",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "ckb-lib-smt"
+version = "0.1.1"
+source = "git+https://github.com/lay2dev/ckb-lib-c-script?branch=main#4c17bb4ca5b6da3ddd5e0f1b145535d122a1f633"
+dependencies = [
+ "blake2b-rs 0.2.0",
+ "cc",
+ "ckb-std",
 ]
 
 [[package]]
@@ -444,7 +470,7 @@ version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be7c2827ee5fe545ea15d52d0d3213c97db10e97a71eba302ff712ddb86c09c2"
 dependencies = [
- "blake2b-rs",
+ "blake2b-rs 0.1.5",
  "faster-hex",
  "includedir",
  "includedir_codegen",
@@ -573,10 +599,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
+name = "cota-smt"
+version = "0.1.0"
+source = "git+https://github.com/nervina-labs/cota-smt?branch=develop#ece036604531382000208247ac5dda444150ec25"
+dependencies = [
+ "blake2b-ref 0.3.0",
+ "cfg-if 0.1.10",
+ "ckb-std",
+ "molecule",
+ "sparse-merkle-tree",
+]
+
+[[package]]
+name = "cota-smt"
+version = "0.1.0"
+source = "git+https://github.com/nervina-labs/cota-smt?branch=main#104a5bc9bf8a40e776bf26575d06829b77b01dff"
+dependencies = [
+ "blake2b-ref 0.3.0",
+ "cfg-if 0.1.10",
+ "ckb-std",
+ "molecule",
+ "sparse-merkle-tree",
+]
+
+[[package]]
 name = "cota-type"
 version = "0.1.0"
 dependencies = [
  "ckb-std",
+ "script-utils",
 ]
 
 [[package]]
@@ -1362,7 +1413,10 @@ dependencies = [
 name = "registry-type"
 version = "0.1.0"
 dependencies = [
+ "blake2b-rs 0.2.0",
  "ckb-std",
+ "cota-smt 0.1.0 (git+https://github.com/nervina-labs/cota-smt?branch=main)",
+ "script-utils",
 ]
 
 [[package]]
@@ -1411,6 +1465,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "script-utils"
+version = "0.1.0"
+dependencies = [
+ "ckb-lib-smt",
+ "ckb-std",
+ "cota-smt 0.1.0 (git+https://github.com/nervina-labs/cota-smt?branch=develop)",
 ]
 
 [[package]]
@@ -1512,6 +1575,15 @@ name = "slab"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9def91fd1e018fe007022791f865d0ccc9b3a0d5001e01aabb8b40e46000afb5"
+
+[[package]]
+name = "sparse-merkle-tree"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f84214ec89cb9d304b5d54c7a266951c25bd396b2df5388420a9497a6896120a"
+dependencies = [
+ "cfg-if 0.1.10",
+]
 
 [[package]]
 name = "spin"

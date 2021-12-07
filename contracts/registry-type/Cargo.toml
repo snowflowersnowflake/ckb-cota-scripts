@@ -7,3 +7,6 @@ edition = "2018"
 
 [dependencies]
 ckb-std = "0.9.0"
+blake2b-rs = "0.2.0"
+script-utils = { path = "../script-utils" }
+cota-smt = {package = "cota-smt", git = "https://github.com/nervina-labs/cota-smt", branch = "main", default_features = false, features = ["no-std"] }

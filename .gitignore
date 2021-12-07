@@ -10,3 +10,4 @@ contracts/c/build/*
 build/*
 !.gitkeep
 .tmp/
+.idea

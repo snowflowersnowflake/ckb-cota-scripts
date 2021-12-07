@@ -1,12 +1,7 @@
 use super::*;
-use ckb_testtool::context::Context;
-use ckb_testtool::ckb_types::{
-    bytes::Bytes,
-    core::TransactionBuilder,
-    packed::*,
-    prelude::*,
-};
 use ckb_testtool::ckb_error::Error;
+use ckb_testtool::ckb_types::{bytes::Bytes, core::TransactionBuilder, packed::*, prelude::*};
+use ckb_testtool::context::Context;
 
 const MAX_CYCLES: u64 = 10_000_000;
 
@@ -34,9 +29,7 @@ fn test_success() {
     let lock_script = context
         .build_script(&out_point, Bytes::from(vec![42]))
         .expect("script");
-    let lock_script_dep = CellDep::new_builder()
-        .out_point(out_point)
-        .build();
+    let lock_script_dep = CellDep::new_builder().out_point(out_point).build();
 
     // prepare cells
     let input_out_point = context.create_cell(
@@ -89,9 +82,7 @@ fn test_empty_args() {
     let lock_script = context
         .build_script(&out_point, Default::default())
         .expect("script");
-    let lock_script_dep = CellDep::new_builder()
-        .out_point(out_point)
-        .build();
+    let lock_script_dep = CellDep::new_builder().out_point(out_point).build();
 
     // prepare cells
     let input_out_point = context.create_cell(
