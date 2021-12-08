@@ -3,17 +3,17 @@ use core::result::Result;
 
 type Byte32Opt = Option<[u8; 32]>;
 
-/// Global CoTA registry cell data structure
+/// CoTA cell data structure
 /// This structure contains the following information:
 /// 1) version: u8
 /// 2) smt_root: [u8; 32]
 #[derive(Debug, Clone)]
-pub struct Registry {
+pub struct Cota {
     pub version:           u8,
     pub smt_root: Byte32Opt,
 }
 
-impl Registry {
+impl Cota {
     pub fn from_data(data: &[u8]) -> Result<Self, Error> {
         if data.len() != 1 && data.len() != 33 {
             return Err(Error::RegistryDataInvalid);
@@ -32,7 +32,7 @@ impl Registry {
             Some(root)
         };
 
-        Ok(Registry {
+        Ok(Cota {
             version,
             smt_root,
         })
