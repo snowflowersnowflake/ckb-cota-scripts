@@ -752,6 +752,7 @@ name = "cota-type"
 version = "0.1.0"
 dependencies = [
  "ckb-std",
+ "cota-smt 0.1.0 (git+https://github.com/nervina-labs/cota-smt?branch=main)",
  "script-utils",
 ]
 
