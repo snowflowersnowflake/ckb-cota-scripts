@@ -1,0 +1,37 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust components
+        run: rustup component add rustfmt && rustup component add clippy
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly-2021-08-16
+          override: true
+
+      - uses: docker-practice/actions-setup-docker@master
+        with:
+          docker_channel: nightly
+          docker_nightly_version: snapshot-20201008
+
+      - name: Install Capsule
+        env:
+          CAPSULE_VERSION: v0.7.0
+        run: |
+          curl -OL https://github.com/nervosnetwork/capsule/releases/download/${CAPSULE_VERSION}/capsule_${CAPSULE_VERSION}_x86_64-linux.tar.gz && tar xf capsule_${CAPSULE_VERSION}_x86_64-linux.tar.gz && echo `pwd`/capsule_${CAPSULE_VERSION}_x86_64-linux >> $GITHUB_PATH
+
+      - name: Check Rust format
+        run: cd contracts && cargo fmt -- --check
+
+      - name: Build contracts
+        run: make build
+
+      - name: Test contracts
+        run: make test
