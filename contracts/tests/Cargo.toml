@@ -6,4 +6,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ckb-testtool = "0.6"
+ckb-testtool = "0.6.1"
+blake2b-rs = "0.2"
+hex = "0.4"
+rand = "0.7"
+cota-smt = {package = "cota-smt", git = "https://github.com/nervina-labs/cota-smt", branch = "main"}

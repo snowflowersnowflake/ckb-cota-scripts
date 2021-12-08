@@ -9,13 +9,13 @@ type Byte32Opt = Option<[u8; 32]>;
 /// 2) registry_smt_root: [u8; 32]
 #[derive(Debug, Clone)]
 pub struct Registry {
-    pub version: u8,
+    pub version:           u8,
     pub registry_smt_root: Byte32Opt,
 }
 
 impl Registry {
     pub fn from_data(data: &[u8]) -> Result<Self, Error> {
-        if data.len() < 1 {
+        if data.len() != 1 && data.len() != 33 {
             return Err(Error::RegistryDataInvalid);
         }
 
@@ -24,7 +24,7 @@ impl Registry {
             return Err(Error::VersionInvalid);
         }
 
-        let registry_smt_root = if data.len() < 33 {
+        let registry_smt_root = if data.len() == 1 {
             None
         } else {
             let mut root = [0u8; 32];

@@ -48,9 +48,9 @@ fn handle_creation(registry_type: &Script) -> Result<(), Error> {
     if registry_args[..] != ret[0..TYPE_ARGS_LEN] {
         return Err(Error::TypeArgsInvalid);
     }
-    let output_registry_data = load_cell_data(0, Source::Output)?;
+    let output_registry = Registry::from_data(&load_cell_data(0, Source::Output)?[..])?;
     // Registry cell data only has version filed
-    if output_registry_data.len() != 1 {
+    if output_registry.registry_smt_root.is_some() {
         return Err(Error::RegistryDataInvalid);
     }
     Ok(())
