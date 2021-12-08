@@ -21,6 +21,7 @@ pub enum Error {
     CoTARegistryCellExistError,
     CoTATypeArgsNotEqualLockHash,
     CoTADataInvalid,
+    CoTACellSMTRootError,
 }
 
 impl From<SysError> for Error {

@@ -53,7 +53,7 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
     // Parse cell data to get cota smt root hash
     let output_cota = Cota::from_data(&load_cell_data(0, Source::Output)?[..])?;
     if output_cota.smt_root.is_none() {
-        return Err(Error::RegistryCellSMTRootError);
+        return Err(Error::CoTACellSMTRootError);
     }
 
     let witness_args = load_group_input_witness_args_with_type(&cota_type)?;
