@@ -5,30 +5,29 @@ use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, packed::*, prelude::*},
     dynamic_loading_c_impl::CKBDLContext,
-    high_level::{load_cell_data, load_cell_type, load_script, load_witness_args},
+    high_level::{load_cell_data, load_script, load_witness_args},
 };
 use core::result::Result;
 use cota_smt::registry::CotaNFTRegistryEntries;
 use script_utils::helper::{
-    check_cota_cell_exist, load_output_cota_lock_hashes, load_output_index_by_type, Action,
+    check_cota_cell_exist, count_cells_by_type, load_output_cota_lock_hashes,
+    load_output_index_by_type, Action,
 };
 use script_utils::registry::Registry;
 use script_utils::{constants::BYTE32_ZEROS, error::Error, smt::LibCKBSmt};
 
 const TYPE_ARGS_LEN: usize = 20;
 
+fn check_registry<'a>(registry_type: &'a Script) -> impl Fn(&Script) -> bool + 'a {
+    move |type_: &Script| registry_type.as_slice() == type_.as_slice()
+}
+
 fn parse_registry_action(registry_type: &Script) -> Result<Action, Error> {
-    let check_registry = |source| {
-        load_cell_type(0, source).map_or(false, |type_opt| {
-            type_opt.map_or(false, |type_| type_.as_slice() == registry_type.as_slice())
-        })
-    };
-    match (
-        check_registry(Source::Input),
-        check_registry(Source::Output),
-    ) {
-        (false, true) => Ok(Action::Create),
-        (true, true) => Ok(Action::Update),
+    let inputs_count = count_cells_by_type(Source::Input, &check_registry(registry_type));
+    let outputs_count = count_cells_by_type(Source::Output, &check_registry(registry_type));
+    match (inputs_count, outputs_count) {
+        (0, 1) => Ok(Action::Create),
+        (1, 1) => Ok(Action::Update),
         _ => Err(Error::RegistryCellsCountError),
     }
 }

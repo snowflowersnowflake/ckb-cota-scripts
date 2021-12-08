@@ -19,6 +19,8 @@ pub enum Error {
     RegistryCellsCountError,
     CoTACellsCountError = 15,
     CoTARegistryCellExistError,
+    CoTATypeArgsNotEqualLockHash,
+    CoTADataInvalid,
 }
 
 impl From<SysError> for Error {
