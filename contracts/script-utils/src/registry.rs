@@ -9,7 +9,7 @@ type Byte32Opt = Option<[u8; 32]>;
 /// 2) smt_root: [u8; 32]
 #[derive(Debug, Clone)]
 pub struct Registry {
-    pub version:           u8,
+    pub version:  u8,
     pub smt_root: Byte32Opt,
 }
 
@@ -32,9 +32,6 @@ impl Registry {
             Some(root)
         };
 
-        Ok(Registry {
-            version,
-            smt_root,
-        })
+        Ok(Registry { version, smt_root })
     }
 }

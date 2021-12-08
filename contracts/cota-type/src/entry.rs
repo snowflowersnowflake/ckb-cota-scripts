@@ -5,20 +5,17 @@ use ckb_std::{
 };
 use core::result::Result;
 use script_utils::error::Error;
-use script_utils::helper::Action;
+use script_utils::helper::{check_registry_cells_exist, Action};
 
 const TYPE_ARGS_LEN: usize = 20;
 
 fn parse_cota_action(cota_type: &Script) -> Result<Action, Error> {
-    let check_cota_cell = |source| {
+    let check_cota = |source| {
         load_cell_type(0, source).map_or(false, |type_opt| {
             type_opt.map_or(false, |type_| type_.as_slice() == cota_type.as_slice())
         })
     };
-    match (
-        check_cota_cell(Source::Input),
-        check_cota_cell(Source::Output),
-    ) {
+    match (check_cota(Source::Input), check_cota(Source::Output)) {
         (false, true) => Ok(Action::Create),
         (true, true) => Ok(Action::Update),
         _ => Err(Error::CoTACellsCountError),
@@ -26,6 +23,9 @@ fn parse_cota_action(cota_type: &Script) -> Result<Action, Error> {
 }
 
 fn handle_creation() -> Result<(), Error> {
+    if !check_registry_cells_exist()? {
+        return Err(Error::CoTARegistryCellExistError);
+    }
     Ok(())
 }
 

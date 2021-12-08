@@ -18,14 +18,14 @@ use script_utils::{constants::BYTE32_ZEROS, error::Error, smt::LibCKBSmt};
 const TYPE_ARGS_LEN: usize = 20;
 
 fn parse_registry_action(registry_type: &Script) -> Result<Action, Error> {
-    let check_registry_cell = |source| {
+    let check_registry = |source| {
         load_cell_type(0, source).map_or(false, |type_opt| {
             type_opt.map_or(false, |type_| type_.as_slice() == registry_type.as_slice())
         })
     };
     match (
-        check_registry_cell(Source::Input),
-        check_registry_cell(Source::Output),
+        check_registry(Source::Input),
+        check_registry(Source::Output),
     ) {
         (false, true) => Ok(Action::Create),
         (true, true) => Ok(Action::Update),
@@ -50,7 +50,7 @@ fn handle_creation(registry_type: &Script) -> Result<(), Error> {
     }
     let output_registry = Registry::from_data(&load_cell_data(0, Source::Output)?[..])?;
     // Registry cell data only has version filed
-    if output_registry.registry_smt_root.is_some() {
+    if output_registry.smt_root.is_some() {
         return Err(Error::RegistryDataInvalid);
     }
     Ok(())
@@ -60,7 +60,7 @@ fn handle_update() -> Result<(), Error> {
     // Parse cell data to get registry smt root hash
     let output_registry = Registry::from_data(&load_cell_data(0, Source::Output)?[..])?;
     let input_registry = Registry::from_data(&load_cell_data(0, Source::Input)?[..])?;
-    if output_registry.registry_smt_root.is_none() {
+    if output_registry.smt_root.is_none() {
         return Err(Error::RegistryCellSMTRootError);
     }
 
@@ -92,13 +92,13 @@ fn handle_update() -> Result<(), Error> {
 
     let lib_ckb_smt = LibCKBSmt::load(&mut context);
 
-    if let Some(smt_root) = output_registry.registry_smt_root {
+    if let Some(smt_root) = output_registry.smt_root {
         lib_ckb_smt
             .smt_verify(&smt_root, &keys[..], &values[..], &proof[..])
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
-    if let Some(smt_root) = input_registry.registry_smt_root {
+    if let Some(smt_root) = input_registry.smt_root {
         values.clear();
         for _ in registry_entries.registries() {
             values.extend(&BYTE32_ZEROS);
