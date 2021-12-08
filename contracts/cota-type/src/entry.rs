@@ -8,10 +8,17 @@ use core::result::Result;
 use script_utils::cota::Cota;
 use script_utils::error::Error;
 use script_utils::helper::{
-    check_registry_cells_exist, check_type_args_not_equal_lock_hash, count_cells_by_type, Action,
+    check_registry_cells_exist, check_type_args_not_equal_lock_hash, count_cells_by_type,
+    load_group_input_witness_args_with_type, Action,
 };
 
 const TYPE_ARGS_LEN: usize = 20;
+
+const CREATE: u8 = 1;
+const MINT: u8 = 2;
+const WITHDRAW: u8 = 3;
+const CLAIM: u8 = 4;
+const UPDATE: u8 = 5;
 
 fn check_cota<'a>(cota_type: &'a Script) -> impl Fn(&Script) -> bool + 'a {
     move |type_: &Script| cota_type.as_slice() == type_.as_slice()
@@ -42,7 +49,27 @@ fn handle_creation(cota_type: &Script) -> Result<(), Error> {
     Ok(())
 }
 
-fn handle_update() -> Result<(), Error> {
+fn handle_update(cota_type: &Script) -> Result<(), Error> {
+    // Parse cell data to get cota smt root hash
+    let output_cota = Cota::from_data(&load_cell_data(0, Source::Output)?[..])?;
+    if output_cota.smt_root.is_none() {
+        return Err(Error::RegistryCellSMTRootError);
+    }
+
+    let witness_args = load_group_input_witness_args_with_type(&cota_type)?;
+    if let Some(witness_args_type) = witness_args.input_type().to_opt() {
+        let witness_args_input_type: Bytes = witness_args_type.unpack();
+        match u8::from(witness_args_input_type[0]) {
+            CREATE => {}
+            MINT => {}
+            WITHDRAW => {}
+            CLAIM => {}
+            UPDATE => {}
+            _ => return Err(Error::WitnessTypeParseError),
+        }
+    } else {
+        return Err(Error::WitnessTypeParseError);
+    }
     Ok(())
 }
 
@@ -55,7 +82,7 @@ pub fn main() -> Result<(), Error> {
 
     match parse_cota_action(&cota_type)? {
         Action::Create => handle_creation(&cota_type)?,
-        Action::Update => handle_update()?,
+        Action::Update => handle_update(&cota_type)?,
     }
 
     Ok(())
