@@ -1,3 +1,4 @@
+use crate::define::verify_cota_define_smt;
 use ckb_std::high_level::load_cell_data;
 use ckb_std::{
     ckb_constants::Source,
@@ -60,7 +61,7 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
     if let Some(witness_args_type) = witness_args.input_type().to_opt() {
         let witness_args_input_type: Bytes = witness_args_type.unpack();
         match u8::from(witness_args_input_type[0]) {
-            CREATE => {}
+            CREATE => verify_cota_define_smt(witness_args_input_type)?,
             MINT => {}
             WITHDRAW => {}
             CLAIM => {}

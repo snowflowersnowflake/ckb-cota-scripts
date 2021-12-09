@@ -3,8 +3,10 @@ extern crate alloc;
 
 pub mod constants;
 pub mod cota;
+pub mod definition;
 pub mod error;
 pub mod helper;
+pub mod nft;
 pub mod registry;
 
 pub mod smt {

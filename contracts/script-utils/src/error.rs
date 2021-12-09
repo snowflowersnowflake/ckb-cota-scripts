@@ -22,6 +22,9 @@ pub enum Error {
     CoTATypeArgsNotEqualLockHash,
     CoTADataInvalid,
     CoTACellSMTRootError,
+    CoTADefineIssuedError,
+    CoTADefineImmutableFieldsError,
+    CoTANFTSmtTypeError,
 }
 
 impl From<SysError> for Error {

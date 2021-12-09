@@ -102,6 +102,12 @@ pub fn u32_from_slice(data: &[u8]) -> u32 {
     u32::from_be_bytes(buf)
 }
 
+pub fn u16_from_slice(data: &[u8]) -> u16 {
+    let mut buf = [0u8; 2];
+    buf.copy_from_slice(data);
+    u16::from_be_bytes(buf)
+}
+
 pub fn check_cota_cell_exist(source: Source) -> bool {
     QueryIter::new(load_cell_type, source).any(|type_opt| {
         if let Some(type_) = type_opt {
