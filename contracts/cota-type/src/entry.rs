@@ -51,6 +51,10 @@ fn handle_creation(cota_type: &Script) -> Result<(), Error> {
 }
 
 fn handle_update(cota_type: &Script) -> Result<(), Error> {
+    if check_type_args_not_equal_lock_hash(cota_type, Source::GroupOutput)? {
+        return Err(Error::CoTATypeArgsNotEqualLockHash);
+    }
+
     // Parse cell data to get cota smt root hash
     let output_cota = Cota::from_data(&load_cell_data(0, Source::Output)?[..])?;
     if output_cota.smt_root.is_none() {

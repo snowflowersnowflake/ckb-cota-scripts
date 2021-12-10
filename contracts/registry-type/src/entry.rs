@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 use blake2b_rs::Blake2bBuilder;
-use ckb_std::high_level::load_input;
+use ckb_std::high_level::{load_cell_lock_hash, load_input};
 use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, packed::*, prelude::*},
@@ -56,6 +56,11 @@ fn handle_creation(registry_type: &Script) -> Result<(), Error> {
 }
 
 fn handle_update() -> Result<(), Error> {
+    let input_lock_hash = load_cell_lock_hash(0, Source::Input)?;
+    let output_lock_hash = load_cell_lock_hash(0, Source::Output)?;
+    if input_lock_hash != output_lock_hash {
+        return Err(Error::RegistryCellDisallowTransfer);
+    }
     // Parse cell data to get registry smt root hash
     let output_registry = Registry::from_data(&load_cell_data(0, Source::Output)?[..])?;
     let input_registry = Registry::from_data(&load_cell_data(0, Source::Input)?[..])?;
