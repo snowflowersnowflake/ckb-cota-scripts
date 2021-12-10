@@ -64,7 +64,7 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
     if let Some(witness_args_type) = witness_args.input_type().to_opt() {
         let witness_args_input_type: Bytes = witness_args_type.unpack();
         match u8::from(witness_args_input_type[0]) {
-            CREATE => verify_cota_define_smt(witness_args_input_type, cota_type)?,
+            CREATE => verify_cota_define_smt(witness_args_input_type)?,
             MINT => {}
             WITHDRAW => {}
             CLAIM => {}

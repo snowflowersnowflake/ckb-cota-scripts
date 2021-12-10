@@ -5,7 +5,7 @@ use ckb_std::error::SysError;
 pub enum Error {
     IndexOutOfBound = 1,
     ItemMissing,
-    LengthNotEnough,
+    LengthInvalid,
     Encoding,
     TypeArgsInvalid = 5,
     VersionInvalid,
@@ -37,7 +37,7 @@ impl From<SysError> for Error {
         match err {
             IndexOutOfBound => Self::IndexOutOfBound,
             ItemMissing => Self::ItemMissing,
-            LengthNotEnough(_) => Self::LengthNotEnough,
+            LengthNotEnough(_) => Self::LengthInvalid,
             Encoding => Self::Encoding,
             Unknown(err_code) => panic!("unexpected sys error {}", err_code),
         }

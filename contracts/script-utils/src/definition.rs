@@ -17,7 +17,7 @@ pub struct Definition {
 impl Definition {
     pub fn from_data(data: &[u8]) -> Result<Self, Error> {
         if data.len() != 9 {
-            return Err(Error::LengthNotEnough);
+            return Err(Error::LengthInvalid);
         }
 
         let total = u32_from_slice(&data[0..4]);

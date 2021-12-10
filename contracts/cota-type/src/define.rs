@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use ckb_std::ckb_types::packed::Script;
 use ckb_std::high_level::load_input;
 use ckb_std::{
     ckb_constants::Source,
@@ -11,7 +10,7 @@ use core::result::Result;
 use cota_smt::common::Uint32;
 use cota_smt::define::DefineCotaNFTEntries;
 use cota_smt::smt::Blake2bBuilder;
-use script_utils::helper::load_output_index_by_type;
+use script_utils::helper::u32_from_slice;
 use script_utils::{
     constants::{BYTE10_ZEROS, BYTE23_ZEROS, BYTE32_ZEROS, DEFINE_NFT_SMT_TYPE},
     cota::Cota,
@@ -20,14 +19,13 @@ use script_utils::{
     smt::LibCKBSmt,
 };
 
-fn generate_cota_type_id(cota_type: &Script) -> Result<[u8; 20], Error> {
+fn generate_cota_type_id(index: u8) -> Result<[u8; 20], Error> {
     let first_input = load_input(0, Source::Input)?;
-    let first_output_index = load_output_index_by_type(cota_type).ok_or(Error::Encoding)?;
     let mut blake2b = Blake2bBuilder::new(32)
         .personal(b"ckb-default-hash")
         .build();
     blake2b.update(first_input.as_slice());
-    blake2b.update(&(first_output_index as u64).to_le_bytes());
+    blake2b.update(&[index]);
     let mut ret = [0; 32];
     blake2b.finalize(&mut ret);
 
@@ -49,17 +47,16 @@ fn check_define_action(action: Bytes, total: Uint32) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn verify_cota_define_smt(
-    witness_args_input_type: Bytes,
-    cota_type: &Script,
-) -> Result<(), Error> {
-    let cota_type_id = generate_cota_type_id(cota_type)?;
-
+pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Error> {
     let mut define_keys: Vec<u8> = Vec::new();
     let mut define_values: Vec<u8> = Vec::new();
 
     let define_entries = DefineCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
+
+    if define_entries.define_keys().len() > 1 {
+        return Err(Error::LengthInvalid);
+    }
 
     for index in 0..define_entries.define_keys().len() {
         let define_key = define_entries
@@ -69,6 +66,7 @@ pub fn verify_cota_define_smt(
         if u16_from_slice(define_key.smt_type().as_slice()) != DEFINE_NFT_SMT_TYPE {
             return Err(Error::CoTANFTSmtTypeError);
         }
+        let cota_type_id = generate_cota_type_id(index as u8)?;
         if &cota_type_id != define_key.cota_id().as_slice() {
             return Err(Error::CoTAIdInvalid);
         }
@@ -79,6 +77,9 @@ pub fn verify_cota_define_smt(
             .ok_or(Error::Encoding)?;
 
         check_define_action(define_entries.action().as_bytes(), define_value.total())?;
+        if u32_from_slice(define_value.as_slice()) != 0u32 {
+            return Err(Error::CoTADefineIssuedError);
+        }
 
         define_keys.extend(define_key.as_slice());
         define_keys.extend(&BYTE10_ZEROS);

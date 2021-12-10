@@ -16,7 +16,7 @@ pub struct Nft {
 impl Nft {
     pub fn from_data(data: &[u8]) -> Result<Self, Error> {
         if data.len() != 22 {
-            return Err(Error::LengthNotEnough);
+            return Err(Error::LengthInvalid);
         }
 
         let configure: u8 = data[0];
