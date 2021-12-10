@@ -19,6 +19,18 @@ use script_utils::{
     smt::LibCKBSmt,
 };
 
+fn check_define_action(action: Bytes, hold_count: u32) -> Result<(), Error> {
+    let mut action_vec: Vec<u8> = Vec::new();
+    action_vec.extend("Create a new NFT collection with ".as_bytes());
+    action_vec.extend(u32::to_be_bytes(hold_count));
+    action_vec.extend(" edition".as_bytes());
+    let action_bytes: Bytes = action_vec.into();
+    if action_bytes != action {
+        return Err(Error::CoTANFTActionError);
+    }
+    Ok(())
+}
+
 pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Error> {
     let mut cota_keys: Vec<u8> = Vec::new();
     let mut cota_new_values: Vec<u8> = Vec::new();
@@ -26,6 +38,10 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
 
     let define_entries = DefineCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
+
+    let hold_count = define_entries.hold_keys().len() as u32;
+    check_define_action(define_entries.action().as_bytes(), hold_count)?;
+
     let define_old_values = define_entries.define_old_values();
     let define_new_values = define_entries.define_new_values();
     if define_old_values.len() > 1 || define_new_values.len() != 1 {
@@ -46,7 +62,7 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
         cota_old_values.extend(&BYTE23_ZEROS);
     }
 
-    if define_entries.hold_keys().len() as u32 != increased_issued {
+    if hold_count != increased_issued {
         return Err(Error::CoTADefineIssuedError);
     }
 

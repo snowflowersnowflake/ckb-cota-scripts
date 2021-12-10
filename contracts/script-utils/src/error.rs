@@ -25,6 +25,7 @@ pub enum Error {
     CoTADefineIssuedError,
     CoTADefineImmutableFieldsError,
     CoTANFTSmtTypeError,
+    CoTANFTActionError,
 }
 
 impl From<SysError> for Error {
