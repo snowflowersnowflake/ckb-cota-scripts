@@ -1,5 +1,5 @@
 use crate::define::verify_cota_define_smt;
-use ckb_std::high_level::load_cell_data;
+use ckb_std::high_level::{load_cell_data, load_cell_lock_hash};
 use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, packed::*, prelude::*},
@@ -35,12 +35,9 @@ fn parse_cota_action(cota_type: &Script) -> Result<Action, Error> {
     }
 }
 
-fn handle_creation(cota_type: &Script) -> Result<(), Error> {
+fn handle_creation() -> Result<(), Error> {
     if !check_registry_cells_exist()? {
         return Err(Error::CoTARegistryCellExistError);
-    }
-    if check_type_args_not_equal_lock_hash(cota_type, Source::GroupOutput)? {
-        return Err(Error::CoTATypeArgsNotEqualLockHash);
     }
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     // CoTA cell data only has version filed
@@ -51,8 +48,10 @@ fn handle_creation(cota_type: &Script) -> Result<(), Error> {
 }
 
 fn handle_update(cota_type: &Script) -> Result<(), Error> {
-    if check_type_args_not_equal_lock_hash(cota_type, Source::GroupOutput)? {
-        return Err(Error::CoTATypeArgsNotEqualLockHash);
+    let input_lock_hash = load_cell_lock_hash(0, Source::GroupInput)?;
+    let output_lock_hash = load_cell_lock_hash(0, Source::GroupOutput)?;
+    if input_lock_hash != output_lock_hash {
+        return Err(Error::CoTACellLockNotSame);
     }
 
     // Parse cell data to get cota smt root hash
@@ -65,7 +64,7 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
     if let Some(witness_args_type) = witness_args.input_type().to_opt() {
         let witness_args_input_type: Bytes = witness_args_type.unpack();
         match u8::from(witness_args_input_type[0]) {
-            CREATE => verify_cota_define_smt(witness_args_input_type)?,
+            CREATE => verify_cota_define_smt(witness_args_input_type, cota_type)?,
             MINT => {}
             WITHDRAW => {}
             CLAIM => {}
@@ -85,8 +84,12 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::TypeArgsInvalid);
     }
 
+    if check_type_args_not_equal_lock_hash(&cota_type, Source::GroupOutput)? {
+        return Err(Error::CoTATypeArgsNotEqualLockHash);
+    }
+
     match parse_cota_action(&cota_type)? {
-        Action::Create => handle_creation(&cota_type)?,
+        Action::Create => handle_creation()?,
         Action::Update => handle_update(&cota_type)?,
     }
 

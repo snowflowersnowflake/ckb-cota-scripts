@@ -17,7 +17,7 @@ pub enum Error {
     RegistryDataInvalid,
     RegistryKeysNotEqualLockHashes,
     RegistryCellsCountError,
-    RegistryCellDisallowTransfer = 15,
+    RegistryCellLockNotSame = 15,
     CoTACellsCountError,
     CoTARegistryCellExistError,
     CoTATypeArgsNotEqualLockHash,
@@ -27,6 +27,8 @@ pub enum Error {
     CoTADefineImmutableFieldsError,
     CoTANFTSmtTypeError,
     CoTANFTActionError,
+    CoTACellLockNotSame,
+    CoTAIdInvalid,
 }
 
 impl From<SysError> for Error {

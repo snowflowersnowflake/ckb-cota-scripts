@@ -1,4 +1,6 @@
 use alloc::vec::Vec;
+use ckb_std::ckb_types::packed::Script;
+use ckb_std::high_level::load_input;
 use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, prelude::*},
@@ -6,23 +8,39 @@ use ckb_std::{
     high_level::load_cell_data,
 };
 use core::result::Result;
+use cota_smt::common::Uint32;
 use cota_smt::define::DefineCotaNFTEntries;
+use cota_smt::smt::Blake2bBuilder;
+use script_utils::helper::load_output_index_by_type;
 use script_utils::{
-    constants::{
-        BYTE10_ZEROS, BYTE23_ZEROS, BYTE32_ZEROS, BYTE6_ZEROS, DEFINE_NFT_SMT_TYPE,
-        HOLD_NFT_SMT_TYPE,
-    },
+    constants::{BYTE10_ZEROS, BYTE23_ZEROS, BYTE32_ZEROS, DEFINE_NFT_SMT_TYPE},
     cota::Cota,
-    definition::Definition,
     error::Error,
     helper::u16_from_slice,
     smt::LibCKBSmt,
 };
 
-fn check_define_action(action: Bytes, hold_count: u32) -> Result<(), Error> {
+fn generate_cota_type_id(cota_type: &Script) -> Result<[u8; 20], Error> {
+    let first_input = load_input(0, Source::Input)?;
+    let first_output_index = load_output_index_by_type(cota_type).ok_or(Error::Encoding)?;
+    let mut blake2b = Blake2bBuilder::new(32)
+        .personal(b"ckb-default-hash")
+        .build();
+    blake2b.update(first_input.as_slice());
+    blake2b.update(&(first_output_index as u64).to_le_bytes());
+    let mut ret = [0; 32];
+    blake2b.finalize(&mut ret);
+
+    let mut cota_type_id = [0u8; 20];
+    cota_type_id.copy_from_slice(&ret[0..20]);
+
+    Ok(cota_type_id)
+}
+
+fn check_define_action(action: Bytes, total: Uint32) -> Result<(), Error> {
     let mut action_vec: Vec<u8> = Vec::new();
     action_vec.extend("Create a new NFT collection with ".as_bytes());
-    action_vec.extend(u32::to_be_bytes(hold_count));
+    action_vec.extend(total.as_slice());
     action_vec.extend(" edition".as_bytes());
     let action_bytes: Bytes = action_vec.into();
     if action_bytes != action {
@@ -31,74 +49,42 @@ fn check_define_action(action: Bytes, hold_count: u32) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Error> {
-    let mut cota_keys: Vec<u8> = Vec::new();
-    let mut cota_new_values: Vec<u8> = Vec::new();
-    let mut cota_old_values: Vec<u8> = Vec::new();
+pub fn verify_cota_define_smt(
+    witness_args_input_type: Bytes,
+    cota_type: &Script,
+) -> Result<(), Error> {
+    let cota_type_id = generate_cota_type_id(cota_type)?;
+
+    let mut define_keys: Vec<u8> = Vec::new();
+    let mut define_values: Vec<u8> = Vec::new();
 
     let define_entries = DefineCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
 
-    let hold_count = define_entries.hold_keys().len() as u32;
-    check_define_action(define_entries.action().as_bytes(), hold_count)?;
-
-    let define_old_values = define_entries.define_old_values();
-    let define_new_values = define_entries.define_new_values();
-    if define_old_values.len() > 1 || define_new_values.len() != 1 {
-        return Err(Error::Encoding);
-    }
-    let define_new_value = define_new_values.get(0).ok_or(Error::Encoding)?;
-    let new_definition = Definition::from_data(define_new_value.as_slice())?;
-    let mut increased_issued = new_definition.issued;
-    if let Some(define_old_value) = define_old_values.get(0) {
-        let old_definition = Definition::from_data(define_old_value.as_slice())?;
-        old_definition.check_immutable_fields(&new_definition)?;
-        if old_definition.issued >= new_definition.issued {
-            return Err(Error::CoTADefineIssuedError);
-        }
-        increased_issued -= old_definition.issued;
-
-        cota_old_values.extend(define_old_value.as_slice());
-        cota_old_values.extend(&BYTE23_ZEROS);
-    }
-
-    if hold_count != increased_issued {
-        return Err(Error::CoTADefineIssuedError);
-    }
-
-    let define_key = define_entries.define_keys().get(0).ok_or(Error::Encoding)?;
-    if u16_from_slice(define_key.smt_type().as_slice()) != DEFINE_NFT_SMT_TYPE {
-        return Err(Error::CoTANFTSmtTypeError);
-    }
-
-    cota_keys.extend(define_entries.define_keys().as_slice());
-    cota_keys.extend(&BYTE10_ZEROS);
-    cota_new_values.extend(define_new_value.as_slice());
-    cota_new_values.extend(&BYTE23_ZEROS);
-
-    for index in 0..define_entries.hold_keys().len() {
-        let hold_key = define_entries
-            .hold_keys()
+    for index in 0..define_entries.define_keys().len() {
+        let define_key = define_entries
+            .define_keys()
             .get(index)
             .ok_or(Error::Encoding)?;
-        if u16_from_slice(hold_key.smt_type().as_slice()) != HOLD_NFT_SMT_TYPE {
+        if u16_from_slice(define_key.smt_type().as_slice()) != DEFINE_NFT_SMT_TYPE {
             return Err(Error::CoTANFTSmtTypeError);
         }
-
-        let hold_value = define_entries
-            .hold_values()
-            .get(index)
-            .ok_or(Error::Encoding)?;
-        if hold_value.configure() != define_new_value.configure() {
-            return Err(Error::CoTADefineImmutableFieldsError);
+        if &cota_type_id != define_key.cota_id().as_slice() {
+            return Err(Error::CoTAIdInvalid);
         }
 
-        cota_keys.extend(hold_key.as_slice());
-        cota_keys.extend(&BYTE6_ZEROS);
+        let define_value = define_entries
+            .define_values()
+            .get(index)
+            .ok_or(Error::Encoding)?;
 
-        cota_old_values.extend(BYTE32_ZEROS);
-        cota_new_values.extend(hold_value.as_slice());
-        cota_new_values.extend(&BYTE10_ZEROS);
+        check_define_action(define_entries.action().as_bytes(), define_value.total())?;
+
+        define_keys.extend(define_key.as_slice());
+        define_keys.extend(&BYTE10_ZEROS);
+
+        define_values.extend(define_value.as_slice());
+        define_values.extend(&BYTE23_ZEROS);
     }
 
     let mut context = unsafe { CKBDLContext::<[u8; 128 * 1024]>::new() };
@@ -111,8 +97,8 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
         lib_ckb_smt
             .smt_verify(
                 &define_smt_root[..],
-                &cota_keys[..],
-                &cota_new_values[..],
+                &define_keys[..],
+                &define_values[..],
                 &proof[..],
             )
             .map_err(|_| Error::SMTProofVerifyFailed)?;
@@ -120,12 +106,16 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
 
     // Verify definition smt proof of cota nft input
     let input_cota = Cota::from_data(&load_cell_data(0, Source::Output)?[..])?;
+    define_values.clear();
+    for _ in 0..define_keys.len() {
+        define_values.extend(&BYTE32_ZEROS);
+    }
     if let Some(define_smt_root) = input_cota.smt_root {
         lib_ckb_smt
             .smt_verify(
                 &define_smt_root[..],
-                &cota_keys[..],
-                &cota_old_values[..],
+                &define_keys[..],
+                &define_values[..],
                 &proof[..],
             )
             .map_err(|_| Error::SMTProofVerifyFailed)?;

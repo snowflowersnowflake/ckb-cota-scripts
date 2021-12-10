@@ -59,7 +59,7 @@ fn handle_update() -> Result<(), Error> {
     let input_lock_hash = load_cell_lock_hash(0, Source::Input)?;
     let output_lock_hash = load_cell_lock_hash(0, Source::Output)?;
     if input_lock_hash != output_lock_hash {
-        return Err(Error::RegistryCellDisallowTransfer);
+        return Err(Error::RegistryCellLockNotSame);
     }
     // Parse cell data to get registry smt root hash
     let output_registry = Registry::from_data(&load_cell_data(0, Source::Output)?[..])?;
