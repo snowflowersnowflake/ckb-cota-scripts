@@ -1,9 +1,8 @@
 use alloc::vec::Vec;
+use ckb_std::ckb_types::bytes::Bytes;
 use ckb_std::high_level::load_input;
 use ckb_std::{
-    ckb_constants::Source,
-    ckb_types::{bytes::Bytes, prelude::*},
-    dynamic_loading_c_impl::CKBDLContext,
+    ckb_constants::Source, ckb_types::prelude::*, dynamic_loading_c_impl::CKBDLContext,
     high_level::load_cell_data,
 };
 use core::result::Result;
@@ -76,11 +75,11 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
             .get(index)
             .ok_or(Error::Encoding)?;
 
-        check_define_action(define_entries.action().as_bytes(), define_value.total())?;
-        if u32_from_slice(define_value.as_slice()) != 0u32 {
+        check_define_action(define_entries.action().raw_data(), define_value.total())?;
+
+        if u32_from_slice(define_value.issued().as_slice()) != 0u32 {
             return Err(Error::CoTADefineIssuedError);
         }
-
         define_keys.extend(define_key.as_slice());
         define_keys.extend(&BYTE10_ZEROS);
 
@@ -106,9 +105,9 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
     }
 
     // Verify definition smt proof of cota nft input
-    let input_cota = Cota::from_data(&load_cell_data(0, Source::Output)?[..])?;
+    let input_cota = Cota::from_data(&load_cell_data(0, Source::Input)?[..])?;
     define_values.clear();
-    for _ in 0..define_keys.len() {
+    for _ in 0..define_entries.define_keys().len() {
         define_values.extend(&BYTE32_ZEROS);
     }
     if let Some(define_smt_root) = input_cota.smt_root {

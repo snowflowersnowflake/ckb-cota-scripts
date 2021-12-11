@@ -16,7 +16,7 @@ pub struct Cota {
 impl Cota {
     pub fn from_data(data: &[u8]) -> Result<Self, Error> {
         if data.len() != 1 && data.len() != 33 {
-            return Err(Error::RegistryDataInvalid);
+            return Err(Error::CoTADataInvalid);
         }
 
         let version: u8 = data[0];

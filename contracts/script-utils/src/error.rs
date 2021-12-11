@@ -22,12 +22,12 @@ pub enum Error {
     CoTARegistryCellExistError,
     CoTATypeArgsNotEqualLockHash,
     CoTADataInvalid,
-    CoTACellSMTRootError,
+    CoTACellSMTRootError = 20,
     CoTADefineIssuedError,
     CoTADefineImmutableFieldsError,
     CoTANFTSmtTypeError,
     CoTANFTActionError,
-    CoTACellLockNotSame,
+    CoTACellLockNotSame = 25,
     CoTAIdInvalid,
 }
 
