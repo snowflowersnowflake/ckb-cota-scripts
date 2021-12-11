@@ -8,6 +8,11 @@ use std::str::FromStr;
 #[cfg(test)]
 mod registry_tests;
 
+#[cfg(test)]
+mod define_tests;
+
+mod constants;
+
 const TEST_ENV_VAR: &str = "CAPSULE_TEST_ENV";
 
 pub enum TestEnv {
