@@ -31,13 +31,16 @@ fn parse_cota_action(cota_type: &Script) -> Result<Action, Error> {
     match (inputs_count, outputs_count) {
         (0, 1) => Ok(Action::Create),
         (1, 1) => Ok(Action::Update),
-        _ => Err(Error::RegistryCellsCountError),
+        _ => Err(Error::CoTACellsCountError),
     }
 }
 
-fn handle_creation() -> Result<(), Error> {
+fn handle_creation(cota_type: &Script) -> Result<(), Error> {
     if !check_registry_cells_exist()? {
         return Err(Error::CoTARegistryCellExistError);
+    }
+    if check_type_args_not_equal_lock_hash(&cota_type, Source::GroupOutput)? {
+        return Err(Error::CoTATypeArgsNotEqualLockHash);
     }
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     // CoTA cell data only has version filed
@@ -52,6 +55,10 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
     let output_lock_hash = load_cell_lock_hash(0, Source::GroupOutput)?;
     if input_lock_hash != output_lock_hash {
         return Err(Error::CoTACellLockNotSame);
+    }
+
+    if check_type_args_not_equal_lock_hash(&cota_type, Source::GroupOutput)? {
+        return Err(Error::CoTATypeArgsNotEqualLockHash);
     }
 
     // Parse cell data to get cota smt root hash
@@ -84,12 +91,8 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::TypeArgsInvalid);
     }
 
-    if check_type_args_not_equal_lock_hash(&cota_type, Source::GroupOutput)? {
-        return Err(Error::CoTATypeArgsNotEqualLockHash);
-    }
-
     match parse_cota_action(&cota_type)? {
-        Action::Create => handle_creation()?,
+        Action::Create => handle_creation(&cota_type)?,
         Action::Update => handle_update(&cota_type)?,
     }
 

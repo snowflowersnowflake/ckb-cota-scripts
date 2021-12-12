@@ -12,11 +12,9 @@ use ckb_testtool::ckb_types::{
 use ckb_testtool::context::random_out_point;
 use ckb_testtool::{builtin::ALWAYS_SUCCESS, context::Context};
 use cota_smt::define::DefineCotaNFTEntriesBuilder;
-use cota_smt::smt::blake2b_256;
 use cota_smt::{
     common::{BytesBuilder, Uint16Builder, Uint32Builder, *},
     smt::{Blake2bHasher, H256, SMT},
-    transfer::*,
 };
 use rand::{thread_rng, Rng};
 
@@ -30,7 +28,6 @@ const COTA_TYPE_ARGS_NOT_EQUAL_LOCK_HASH: i8 = 18;
 const COTA_DATA_INVALID: i8 = 19;
 const COTA_CELL_SMT_ROOT_ERROR: i8 = 20;
 const COTA_DEFINE_ISSUED_ERROR: i8 = 21;
-const COTA_DEFINE_IMMUTABLE_FIELDS_ERROR: i8 = 22;
 const COTA_NFT_SMT_TYPE_ERROR: i8 = 23;
 const COTA_NFT_ACTION_ERROR: i8 = 24;
 const COTA_CELL_LOCK_NOT_SAME: i8 = 25;
@@ -46,7 +43,6 @@ enum DefineError {
     CoTADataInvalid,
     CoTACellSMTRootError,
     CoTADefineIssuedError,
-    CoTADefineImmutableFieldsError,
     CoTANFTSmtTypeError,
     CoTANFTActionError,
     CoTACellLockNotSame,
@@ -72,7 +68,11 @@ fn generate_define_cota_nft_smt_data(
     blake2b.finalize(&mut ret);
 
     let mut cota_id = [0u8; 20];
-    cota_id.copy_from_slice(&ret[0..20]);
+    if define_error == DefineError::CoTAIdInvalid {
+        cota_id.copy_from_slice(&ret[10..30]);
+    } else {
+        cota_id.copy_from_slice(&ret[0..20]);
+    }
     let mut cota_id_bytes = [Byte::from(0); 20];
     cota_id_bytes.copy_from_slice(
         &cota_id
@@ -139,7 +139,7 @@ fn generate_define_cota_nft_smt_data(
         let mut define_cote_id_bytes = [0u8; 32];
         define_cote_id_bytes.copy_from_slice(&define_cote_id_vec);
 
-        let mut key = H256::from(define_cote_id_bytes);
+        let key = H256::from(define_cote_id_bytes);
 
         let define_value = DefineCotaNFTValueBuilder::default()
             .total(Uint32Builder::default().set(total_bytes).build())
@@ -151,7 +151,7 @@ fn generate_define_cota_nft_smt_data(
         define_cota_info_vec.extend(&BYTE23_ZEROS);
         let mut define_cota_bytes = [0u8; 32];
         define_cota_bytes.copy_from_slice(&define_cota_info_vec);
-        let mut value = H256::from(define_cota_bytes);
+        let value = H256::from(define_cota_bytes);
 
         define_values.push(define_value.clone());
         update_leaves.push((key, value));
@@ -194,7 +194,10 @@ fn generate_define_cota_nft_smt_data(
     action_vec.extend("Create a new NFT collection with ".as_bytes());
     action_vec.extend(&[0, 0, 0, 100u8]);
     action_vec.extend(" edition".as_bytes());
-    let mut action_bytes = BytesBuilder::default()
+    if define_error == DefineError::CoTANFTActionError {
+        action_vec.reverse();
+    }
+    let action_bytes = BytesBuilder::default()
         .set(action_vec.iter().map(|v| Byte::from(*v)).collect())
         .build();
 
@@ -243,7 +246,12 @@ fn create_test_context(define_error: DefineError) -> (Context, TransactionView) 
             Bytes::from(hex::decode("157a3633c3477d84b604a25e5fca5ca681762c10").unwrap()),
         )
         .expect("script");
-    let lock_hash_160_vec = &lock_script.calc_script_hash().as_bytes()[0..20];
+    let lock_hash = lock_script.calc_script_hash().as_bytes();
+    let lock_hash_160_vec = if define_error == DefineError::CoTATypeArgsNotEqualLockHash {
+        &lock_hash[10..30]
+    } else {
+        &lock_hash[0..20]
+    };
 
     let to_lock_script = context
         .build_script(
@@ -251,7 +259,7 @@ fn create_test_context(define_error: DefineError) -> (Context, TransactionView) 
             Bytes::from(hex::decode("7164f48d7a5bf2298166f8d81b81ea4e908e16ad").unwrap()),
         )
         .expect("script");
-    let to_lock_hash_160_vec = &to_lock_script.calc_script_hash().as_bytes()[0..20];
+    let to_lock_hash_160_vec = &to_lock_script.clone().calc_script_hash().as_bytes()[0..20];
     let mut to_lock_hash_160 = [Byte::from(0u8); 20];
     let to_lock_hash_bytes: Vec<Byte> = to_lock_hash_160_vec
         .to_vec()
@@ -268,6 +276,7 @@ fn create_test_context(define_error: DefineError) -> (Context, TransactionView) 
     let define_cota_nft_input = CellInput::new_builder()
         .previous_output(cota_input_out_point.clone())
         .build();
+
     let cota_type_script = context
         .build_script(&cota_out_point, Bytes::copy_from_slice(lock_hash_160_vec))
         .expect("script");
@@ -296,10 +305,21 @@ fn create_test_context(define_error: DefineError) -> (Context, TransactionView) 
 
     let inputs = vec![define_cota_nft_input.clone()];
 
+    let cota_type_opt: ScriptOpt = if define_error == DefineError::CoTACellsCountError {
+        ScriptOptBuilder::default().set(None).build()
+    } else {
+        Some(cota_type_script.clone()).pack()
+    };
+
+    let output_lock_script = if define_error == DefineError::CoTACellLockNotSame {
+        to_lock_script.clone()
+    } else {
+        lock_script.clone()
+    };
     let outputs = vec![CellOutput::new_builder()
         .capacity(500u64.pack())
-        .lock(lock_script.clone())
-        .type_(Some(cota_type_script.clone()).pack())
+        .lock(output_lock_script)
+        .type_(cota_type_opt)
         .build()];
 
     let outputs_data: Vec<Bytes> = match define_error {
@@ -307,6 +327,7 @@ fn create_test_context(define_error: DefineError) -> (Context, TransactionView) 
             hex::decode("0054dfaba38275883ef9b6d5fb02053b71dbba19630ff5f2ec01d5d6965366c1f7")
                 .unwrap(),
         )],
+        DefineError::CoTADataInvalid => vec![Bytes::from(hex::decode("001234").unwrap())],
         DefineError::CoTACellSMTRootError => {
             let mut data_vec = vec![];
             let version = [0u8];
@@ -407,4 +428,74 @@ fn test_define_cota_nft_smt_type_error() {
     // run
     let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
     assert_script_error(err, COTA_NFT_SMT_TYPE_ERROR);
+}
+
+#[test]
+fn test_define_destroy_cota_cell_error() {
+    let (mut context, tx) = create_test_context(DefineError::CoTACellsCountError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_CELLS_COUNT_ERROR);
+}
+
+#[test]
+fn test_define_cota_type_args_not_equal_lock_hash_error() {
+    let (mut context, tx) = create_test_context(DefineError::CoTATypeArgsNotEqualLockHash);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_TYPE_ARGS_NOT_EQUAL_LOCK_HASH);
+}
+
+#[test]
+fn test_define_cota_data_error() {
+    let (mut context, tx) = create_test_context(DefineError::CoTADataInvalid);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_DATA_INVALID);
+}
+
+#[test]
+fn test_define_cota_issued_error() {
+    let (mut context, tx) = create_test_context(DefineError::CoTADefineIssuedError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_DEFINE_ISSUED_ERROR);
+}
+
+#[test]
+fn test_define_cota_action_error() {
+    let (mut context, tx) = create_test_context(DefineError::CoTANFTActionError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_NFT_ACTION_ERROR);
+}
+
+#[test]
+fn test_define_cota_lock_not_same_error() {
+    let (mut context, tx) = create_test_context(DefineError::CoTACellLockNotSame);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_CELL_LOCK_NOT_SAME);
+}
+
+#[test]
+fn test_define_cota_id_error() {
+    let (mut context, tx) = create_test_context(DefineError::CoTAIdInvalid);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_ID_INVALID);
 }

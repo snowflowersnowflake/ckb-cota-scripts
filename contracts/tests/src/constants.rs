@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub const TYPE: u8 = 1;
 
 pub const REGISTRY_TYPE_CODE_HASH: [u8; 32] = [
