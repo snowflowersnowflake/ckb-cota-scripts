@@ -27,7 +27,7 @@ impl Definition {
             return Err(Error::CoTADefineIssuedError);
         }
 
-        let configure: u8 = data[9];
+        let configure: u8 = data[8];
 
         Ok(Definition {
             total,

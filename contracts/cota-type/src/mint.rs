@@ -7,6 +7,7 @@ use ckb_std::{
     high_level::load_cell_data,
 };
 use core::result::Result;
+use cota_smt::common::DefineCotaNFTId;
 use cota_smt::mint::MintCotaNFTEntries;
 use cota_smt::smt::blake2b_256;
 use script_utils::constants::{BYTE6_ZEROS, WITHDRAWAL_NFT_SMT_TYPE};
@@ -34,7 +35,7 @@ fn check_mint_action(mint_entries: &MintCotaNFTEntries) -> Result<(), Error> {
         .get(0)
         .ok_or(Error::Encoding)?;
     let cota_id = withdrawal_key.cota_id().as_slice().to_vec();
-    let receiver_lock_bytes = &mint_entries.action().as_slice().to_vec()[20..];
+    let receiver_lock_bytes = &mint_entries.action().as_slice().to_vec()[36..];
     let receiver_lock_hash = blake2b_256(receiver_lock_bytes);
     if &receiver_lock_hash[0..20] != withdrawal_value.to().as_slice() {
         return Err(Error::CoTANFTActionError);
@@ -98,7 +99,6 @@ fn check_cota_definition_and_withdrawal(mint_entries: &MintCotaNFTEntries) -> Re
             return Err(Error::CoTAOutPointError);
         }
     }
-    token_indexes.sort_unstable();
     let mut mint_token_indexes = Vec::new();
     for token_id in old_definition.issued..new_definition.issued {
         mint_token_indexes.push(token_id);
@@ -125,12 +125,13 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
     let mut cota_new_values: Vec<u8> = Vec::new();
     let mut cota_old_values: Vec<u8> = Vec::new();
 
+    let define_key: DefineCotaNFTId = mint_entries.define_keys().get(0).ok_or(Error::Encoding)?;
     let define_old_values = mint_entries.define_old_values();
     let define_new_values = mint_entries.define_new_values();
     let define_new_value = define_new_values.get(0).ok_or(Error::Encoding)?;
     let define_old_value = define_old_values.get(0).ok_or(Error::Encoding)?;
 
-    cota_keys.extend(mint_entries.define_keys().as_slice());
+    cota_keys.extend(define_key.as_slice());
     cota_keys.extend(&BYTE10_ZEROS);
     cota_old_values.extend(define_old_value.as_slice());
     cota_old_values.extend(&BYTE23_ZEROS);
@@ -149,8 +150,7 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
         cota_keys.extend(withdrawal_key.as_slice());
         cota_keys.extend(&BYTE6_ZEROS);
         cota_old_values.extend(BYTE32_ZEROS);
-        cota_new_values.extend(withdrawal_value.as_slice());
-        cota_new_values.extend(&BYTE10_ZEROS);
+        cota_new_values.extend(blake2b_256(withdrawal_value.as_slice()));
     }
 
     let mut context = unsafe { CKBDLContext::<[u8; 128 * 1024]>::new() };

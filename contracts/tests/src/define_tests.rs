@@ -133,13 +133,13 @@ fn generate_define_cota_nft_smt_data(
 
         define_keys.push(define_key.clone());
 
-        let mut define_cote_id_vec = Vec::new();
-        define_cote_id_vec.extend(define_key.as_slice());
-        define_cote_id_vec.extend(&BYTE10_ZEROS);
-        let mut define_cote_id_bytes = [0u8; 32];
-        define_cote_id_bytes.copy_from_slice(&define_cote_id_vec);
+        let mut define_key_vec = Vec::new();
+        define_key_vec.extend(define_key.as_slice());
+        define_key_vec.extend(&BYTE10_ZEROS);
+        let mut define_key_bytes = [0u8; 32];
+        define_key_bytes.copy_from_slice(&define_key_vec);
 
-        let key = H256::from(define_cote_id_bytes);
+        let key = H256::from(define_key_bytes);
 
         let define_value = DefineCotaNFTValueBuilder::default()
             .total(Uint32Builder::default().set(total_bytes).build())
@@ -224,7 +224,7 @@ fn generate_define_cota_nft_smt_data(
 }
 
 fn create_test_context(define_error: DefineError) -> (Context, TransactionView) {
-    // deploy compact-nft-type script
+    // deploy cota-type script
     let mut context = Context::default();
     let cota_bin: Bytes = Loader::default().load_binary("cota-type");
     let cota_out_point = context.deploy_cell(cota_bin);

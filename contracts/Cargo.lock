@@ -737,7 +737,7 @@ dependencies = [
 [[package]]
 name = "cota-smt"
 version = "0.1.0"
-source = "git+https://github.com/nervina-labs/cota-smt?rev=438188a#438188a979cc01ca278ebe98ebf65efe5b925bb9"
+source = "git+https://github.com/nervina-labs/cota-smt?rev=a1a8313#a1a8313a64f31aa8cca82afa014a774400f59982"
 dependencies = [
  "blake2b-ref 0.3.0",
  "cfg-if 0.1.10",
@@ -752,7 +752,7 @@ name = "cota-type"
 version = "0.1.0"
 dependencies = [
  "ckb-std",
- "cota-smt 0.1.0 (git+https://github.com/nervina-labs/cota-smt?rev=438188a)",
+ "cota-smt 0.1.0 (git+https://github.com/nervina-labs/cota-smt?rev=a1a8313)",
  "script-utils",
 ]
 
@@ -1815,7 +1815,7 @@ version = "0.1.0"
 dependencies = [
  "blake2b-rs 0.2.0",
  "ckb-testtool",
- "cota-smt 0.1.0 (git+https://github.com/nervina-labs/cota-smt?rev=438188a)",
+ "cota-smt 0.1.0 (git+https://github.com/nervina-labs/cota-smt?rev=a1a8313)",
  "hex",
  "rand 0.7.3",
 ]
