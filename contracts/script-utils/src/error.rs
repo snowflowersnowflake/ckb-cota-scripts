@@ -24,11 +24,13 @@ pub enum Error {
     CoTADataInvalid,
     CoTACellSMTRootError = 20,
     CoTADefineIssuedError,
-    CoTADefineImmutableFieldsError,
+    CoTAImmutableFieldsError,
     CoTANFTSmtTypeError,
     CoTANFTActionError,
     CoTACellLockNotSame = 25,
     CoTAIdInvalid,
+    CoTANFTTokenIndexError,
+    CoTAOutPointError,
 }
 
 impl From<SysError> for Error {

@@ -38,7 +38,7 @@ impl Definition {
 
     pub fn check_immutable_fields(&self, other: &Definition) -> Result<(), Error> {
         if self.total != other.total || self.configure != other.configure {
-            return Err(Error::CoTADefineImmutableFieldsError);
+            return Err(Error::CoTAImmutableFieldsError);
         }
         Ok(())
     }
