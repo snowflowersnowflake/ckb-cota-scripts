@@ -8,6 +8,7 @@
 mod define;
 mod entry;
 mod mint;
+mod withdraw;
 
 use ckb_std::default_alloc;
 

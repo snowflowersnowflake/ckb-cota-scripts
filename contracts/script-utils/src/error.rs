@@ -31,6 +31,10 @@ pub enum Error {
     CoTAIdInvalid,
     CoTANFTTokenIndexError,
     CoTAOutPointError,
+    CoTALockedNFTCannotTransfer,
+    CoTANFTCannotTransferBeforeClaim,
+    CoTANFTCannotTransferAfterClaim,
+    CoTAWithdrawalNFTInfoError,
 }
 
 impl From<SysError> for Error {

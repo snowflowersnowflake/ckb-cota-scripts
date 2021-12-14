@@ -1,5 +1,6 @@
 use crate::define::verify_cota_define_smt;
 use crate::mint::verify_cota_mint_smt;
+use crate::withdraw::verify_cota_withdraw_smt;
 use ckb_std::high_level::{load_cell_data, load_cell_lock_hash};
 use ckb_std::{
     ckb_constants::Source,
@@ -74,7 +75,7 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
         match u8::from(witness_args_input_type[0]) {
             CREATE => verify_cota_define_smt(witness_args_input_type)?,
             MINT => verify_cota_mint_smt(witness_args_input_type)?,
-            WITHDRAW => {}
+            WITHDRAW => verify_cota_withdraw_smt(witness_args_input_type)?,
             CLAIM => {}
             UPDATE => {}
             _ => return Err(Error::WitnessTypeParseError),
