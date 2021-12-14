@@ -21,25 +21,30 @@ use script_utils::{
     smt::LibCKBSmt,
 };
 
+const FIXED_ACTION_LEN: usize = 36;
 fn check_mint_action(mint_entries: &MintCotaNFTEntries) -> Result<(), Error> {
     if mint_entries.withdrawal_keys().len() != 1 || mint_entries.define_keys().len() != 1 {
         return Ok(());
     }
-    let action = mint_entries.action().as_slice().to_vec();
-    let withdrawal_key = mint_entries
-        .withdrawal_keys()
-        .get(0)
-        .ok_or(Error::Encoding)?;
+    let action = mint_entries.action().raw_data().to_vec();
+    if action.len() <= FIXED_ACTION_LEN {
+        return Err(Error::CoTANFTActionError);
+    }
     let withdrawal_value = mint_entries
         .withdrawal_values()
         .get(0)
         .ok_or(Error::Encoding)?;
-    let cota_id = withdrawal_key.cota_id().as_slice().to_vec();
-    let receiver_lock_bytes = &mint_entries.action().as_slice().to_vec()[36..];
+    let receiver_lock_bytes = &action[FIXED_ACTION_LEN..];
     let receiver_lock_hash = blake2b_256(receiver_lock_bytes);
     if &receiver_lock_hash[0..20] != withdrawal_value.to().as_slice() {
         return Err(Error::CoTANFTActionError);
     }
+
+    let withdrawal_key = mint_entries
+        .withdrawal_keys()
+        .get(0)
+        .ok_or(Error::Encoding)?;
+    let cota_id = withdrawal_key.cota_id().as_slice().to_vec();
 
     let mut action_vec: Vec<u8> = Vec::new();
     action_vec.extend("Mint an NFT ".as_bytes());
