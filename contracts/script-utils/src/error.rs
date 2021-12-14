@@ -32,7 +32,7 @@ pub enum Error {
     CoTANFTTokenIndexError,
     CoTAOutPointError,
     CoTALockedNFTCannotTransfer,
-    CoTANFTCannotTransferBeforeClaim,
+    CoTANFTCannotTransferBeforeClaim = 30,
     CoTANFTCannotTransferAfterClaim,
     CoTAWithdrawalNFTInfoError,
 }

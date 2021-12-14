@@ -10,7 +10,9 @@ use core::result::Result;
 use cota_smt::common::{CotaNFTInfo, LockHashSlice};
 use cota_smt::smt::blake2b_256;
 use cota_smt::transfer::WithdrawalCotaNFTEntries;
-use script_utils::constants::{BYTE6_ZEROS, HOLD_NFT_SMT_TYPE, WITHDRAWAL_NFT_SMT_TYPE};
+use script_utils::constants::{
+    BYTE10_ZEROS, BYTE6_ZEROS, HOLD_NFT_SMT_TYPE, WITHDRAWAL_NFT_SMT_TYPE,
+};
 use script_utils::cota::Cota;
 use script_utils::helper::u16_from_slice;
 use script_utils::nft::Nft;
@@ -112,7 +114,7 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
         cota_values.extend(&BYTE32_ZEROS);
         cota_values.extend(&blake2b_256(withdrawal_value.as_slice()));
         cota_old_values.extend(hold_value.as_slice());
-        cota_old_values.extend(&BYTE6_ZEROS);
+        cota_old_values.extend(&BYTE10_ZEROS);
         cota_old_values.extend(&BYTE32_ZEROS);
     }
 
@@ -140,7 +142,7 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
             .smt_verify(
                 &cota_smt_root[..],
                 &cota_keys[..],
-                &cota_values[..],
+                &cota_old_values[..],
                 &proof[..],
             )
             .map_err(|_| Error::SMTProofVerifyFailed)?;
