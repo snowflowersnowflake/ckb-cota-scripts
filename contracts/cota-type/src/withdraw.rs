@@ -33,17 +33,50 @@ fn check_nft_transferable(hold_value: &CotaNFTInfo, to: LockHashSlice) -> Result
     Ok(())
 }
 
+fn check_withdraw_action(withdraw_entries: &WithdrawalCotaNFTEntries) -> Result<(), Error> {
+    if withdraw_entries.hold_keys().len() != 1 {
+        return Ok(());
+    }
+    let action = withdraw_entries.action().as_slice().to_vec();
+    let withdrawal_key = withdraw_entries
+        .withdrawal_keys()
+        .get(0)
+        .ok_or(Error::Encoding)?;
+    let withdrawal_value = withdraw_entries
+        .withdrawal_values()
+        .get(0)
+        .ok_or(Error::Encoding)?;
+    let cota_id = withdrawal_key.cota_id().as_slice().to_vec();
+    let receiver_lock_bytes = &withdraw_entries.action().as_slice().to_vec()[40..];
+    let receiver_lock_hash = blake2b_256(receiver_lock_bytes);
+    if &receiver_lock_hash[0..20] != withdrawal_value.to().as_slice() {
+        return Err(Error::CoTANFTActionError);
+    }
+
+    let mut action_vec: Vec<u8> = Vec::new();
+    action_vec.extend("Transfer an NFT ".as_bytes());
+    action_vec.extend(cota_id);
+    action_vec.extend(" to ".as_bytes());
+    action_vec.extend(receiver_lock_bytes);
+    if action_vec != action {
+        return Err(Error::CoTANFTActionError);
+    }
+    Ok(())
+}
+
 pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Error> {
     let cota_input_out_point = load_input_out_point(0, Source::GroupInput)?;
 
     let withdraw_entries = WithdrawalCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
-    let hold_keys = withdraw_entries.hold_keys();
+
+    check_withdraw_action(&withdraw_entries)?;
 
     let mut cota_keys: Vec<u8> = Vec::new();
     let mut cota_values: Vec<u8> = Vec::new();
     let mut cota_old_values: Vec<u8> = Vec::new();
 
+    let hold_keys = withdraw_entries.hold_keys();
     for index in 0..hold_keys.len() {
         let hold_key = hold_keys.get(index).ok_or(Error::Encoding)?;
         if u16_from_slice(hold_key.smt_type().as_slice()) != HOLD_NFT_SMT_TYPE {
