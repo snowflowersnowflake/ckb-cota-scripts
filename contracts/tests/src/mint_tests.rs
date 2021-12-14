@@ -34,6 +34,7 @@ const COTA_OUT_POINT_ERROR: i8 = 28;
 #[derive(PartialEq, Copy, Clone)]
 enum WithdrawalError {
     NoError,
+    SingleAction,
     WitnessTypeParseError,
     SMTProofVerifyFailed,
     CoTADefineIssuedError,
@@ -77,12 +78,14 @@ fn generate_mint_cota_nft_smt_data(
 
     let total_bytes = [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(100)];
     let old_issued_bytes = [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(25)];
-    let new_issued_bytes = if withdrawal_error == WithdrawalError::CoTADefineIssuedError {
-        [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(30)]
-    } else if withdrawal_error == WithdrawalError::CoTANFTActionError {
-        [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(26)]
-    } else {
-        [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(35)]
+    let new_issued_bytes = match withdrawal_error {
+        WithdrawalError::CoTADefineIssuedError => {
+            [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(30)]
+        }
+        WithdrawalError::CoTANFTActionError | WithdrawalError::SingleAction => {
+            [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(26)]
+        }
+        _ => [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(35)],
     };
     let characteristic_bytes: Vec<Byte> = [5u8; 20].iter().map(|v| Byte::from(*v)).collect();
     let mut characteristic: [Byte; 20] = [Byte::from(0); 20];
@@ -278,7 +281,7 @@ fn generate_mint_cota_nft_smt_data(
     action_vec.extend("Mint an NFT ".as_bytes());
     action_vec.extend(cota_id_vec);
     action_vec.extend(" to ".as_bytes());
-    action_vec.extend(to_lock.calc_script_hash().as_slice());
+    action_vec.extend(to_lock.as_slice());
 
     if withdrawal_error == WithdrawalError::CoTANFTActionError {
         action_vec.reverse();
@@ -367,10 +370,9 @@ fn create_test_context(withdrawal_error: WithdrawalError) -> (Context, Transacti
         .build_script(&cota_out_point, Bytes::copy_from_slice(lock_hash_160_vec))
         .expect("script");
 
-    let withdrawal_count = if withdrawal_error == WithdrawalError::CoTANFTActionError {
-        1
-    } else {
-        10
+    let withdrawal_count = match withdrawal_error {
+        WithdrawalError::CoTANFTActionError | WithdrawalError::SingleAction => 1,
+        _ => 10,
     };
     let out_point = if withdrawal_error == WithdrawalError::CoTAOutPointError {
         random_out_point()
@@ -460,6 +462,18 @@ fn create_test_context(withdrawal_error: WithdrawalError) -> (Context, Transacti
 #[test]
 fn test_mint_cota_nft_cell_success() {
     let (mut context, tx) = create_test_context(WithdrawalError::NoError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let cycles = context
+        .verify_tx(&tx, MAX_CYCLES)
+        .expect("pass verification");
+    println!("consume cycles: {}", cycles);
+}
+
+#[test]
+fn test_mint_cota_nft_cell_single_action_success() {
+    let (mut context, tx) = create_test_context(WithdrawalError::SingleAction);
 
     let tx = context.complete_tx(tx);
     // run

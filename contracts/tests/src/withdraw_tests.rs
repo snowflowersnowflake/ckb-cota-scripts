@@ -33,6 +33,7 @@ const COTA_WITHDRAWAL_NFT_INFO_ERROR: i8 = 32;
 #[derive(PartialEq, Copy, Clone)]
 enum WithdrawalError {
     NoError,
+    SingleAction,
     SMTProofVerifyFailed,
     CoTALockedNFTCannotTransfer,
     CoTANFTCannotTransferBeforeClaim,
@@ -248,7 +249,7 @@ fn generate_withdrawal_cota_smt_data(
     action_vec.extend("Transfer an NFT ".as_bytes());
     action_vec.extend(cota_id_vec);
     action_vec.extend(" to ".as_bytes());
-    action_vec.extend(to_lock.calc_script_hash().as_slice());
+    action_vec.extend(to_lock.as_slice());
 
     if withdrawal_error == WithdrawalError::CoTANFTActionError {
         action_vec.reverse();
@@ -333,10 +334,9 @@ fn create_test_context(withdrawal_error: WithdrawalError) -> (Context, Transacti
     } else {
         cota_input_out_point.clone()
     };
-    let withdrawal_count = if withdrawal_error == WithdrawalError::CoTANFTActionError {
-        1usize
-    } else {
-        5usize
+    let withdrawal_count = match withdrawal_error {
+        WithdrawalError::CoTANFTActionError | WithdrawalError::SingleAction => 1,
+        _ => 5,
     };
     let (old_root_hash, root_hash, witness_data) =
         generate_withdrawal_cota_smt_data(withdrawal_error, out_point, to_lock, withdrawal_count);
@@ -407,6 +407,18 @@ fn create_test_context(withdrawal_error: WithdrawalError) -> (Context, Transacti
 #[test]
 fn test_withdraw_cota_cell_success() {
     let (mut context, tx) = create_test_context(WithdrawalError::NoError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let cycles = context
+        .verify_tx(&tx, MAX_CYCLES)
+        .expect("pass verification");
+    println!("consume cycles: {}", cycles);
+}
+
+#[test]
+fn test_withdraw_cota_cell_single_action_success() {
+    let (mut context, tx) = create_test_context(WithdrawalError::SingleAction);
 
     let tx = context.complete_tx(tx);
     // run
