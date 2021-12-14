@@ -183,12 +183,17 @@ fn generate_mint_cota_nft_smt_data(
             .collect::<Vec<Byte>>(),
     );
 
+    let issued_base = if withdrawal_error == WithdrawalError::CoTANFTTokenIndexError {
+        10u8
+    } else {
+        25u8
+    };
     for index in 0..withdrawal_count {
         let total_index_bytes = [
             Byte::from(0),
             Byte::from(0),
             Byte::from(0),
-            Byte::from((index + 25) as u8),
+            Byte::from(index as u8 + issued_base),
         ];
         let token_index = Uint32Builder::default().set(total_index_bytes).build();
         let withdrawal_key = CotaNFTIdBuilder::default()
@@ -205,8 +210,13 @@ fn generate_mint_cota_nft_smt_data(
         withdrawal_key_bytes.copy_from_slice(&withdrawal_key_vec);
         let key = H256::from(withdrawal_key_bytes);
 
+        let configure = if withdrawal_error == WithdrawalError::CoTAImmutableFieldsError {
+            0u8
+        } else {
+            3u8
+        };
         let cota_info = CotaNFTInfoBuilder::default()
-            .configure(Byte::from(3))
+            .configure(Byte::from(configure))
             .state(Byte::from(3))
             .characteristic(CharacteristicBuilder::default().set(characteristic).build())
             .build();
@@ -352,9 +362,6 @@ fn create_test_context(withdrawal_error: WithdrawalError) -> (Context, Transacti
         .build();
 
     let cota_input_out_point = random_out_point();
-    let mint_cota_nft_input = CellInput::new_builder()
-        .previous_output(cota_input_out_point.clone())
-        .build();
 
     let cota_type_script = context
         .build_script(&cota_out_point, Bytes::copy_from_slice(lock_hash_160_vec))
@@ -365,13 +372,14 @@ fn create_test_context(withdrawal_error: WithdrawalError) -> (Context, Transacti
     } else {
         10
     };
+    let out_point = if withdrawal_error == WithdrawalError::CoTAOutPointError {
+        random_out_point()
+    } else {
+        cota_input_out_point.clone()
+    };
 
-    let (old_root_hash, root_hash, witness_data) = generate_mint_cota_nft_smt_data(
-        withdrawal_error,
-        cota_input_out_point.clone(),
-        to_lock,
-        withdrawal_count,
-    );
+    let (old_root_hash, root_hash, witness_data) =
+        generate_mint_cota_nft_smt_data(withdrawal_error, out_point, to_lock, withdrawal_count);
 
     let mut cota_nft_data_vec: Vec<u8> = vec![];
     let version = [0u8];
@@ -509,4 +517,34 @@ fn test_mint_cota_action_error() {
     // run
     let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
     assert_script_error(err, COTA_NFT_ACTION_ERROR);
+}
+
+#[test]
+fn test_mint_cota_out_point_error() {
+    let (mut context, tx) = create_test_context(WithdrawalError::CoTAOutPointError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_OUT_POINT_ERROR);
+}
+
+#[test]
+fn test_mint_cota_token_index_error() {
+    let (mut context, tx) = create_test_context(WithdrawalError::CoTANFTTokenIndexError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_NFT_TOKEN_INDEX_ERROR);
+}
+
+#[test]
+fn test_mint_cota_configure_not_same_error() {
+    let (mut context, tx) = create_test_context(WithdrawalError::CoTAImmutableFieldsError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_IMMUTABLE_FIELDS_ERROR);
 }
