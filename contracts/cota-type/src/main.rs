@@ -5,6 +5,7 @@
 #![feature(alloc_error_handler)]
 #![feature(panic_info_message)]
 
+mod claim;
 mod define;
 mod entry;
 mod mint;

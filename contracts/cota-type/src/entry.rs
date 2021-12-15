@@ -1,3 +1,4 @@
+use crate::claim::verify_cota_claim_smt;
 use crate::define::verify_cota_define_smt;
 use crate::mint::verify_cota_mint_smt;
 use crate::withdraw::verify_cota_withdraw_smt;
@@ -64,19 +65,19 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
     }
 
     // Parse cell data to get cota smt root hash
-    let output_cota = Cota::from_data(&load_cell_data(0, Source::Output)?[..])?;
+    let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if output_cota.smt_root.is_none() {
         return Err(Error::CoTACellSMTRootError);
     }
 
-    let witness_args = load_group_input_witness_args_with_type(&cota_type)?;
+    let witness_args = load_group_input_witness_args_with_type(cota_type)?;
     if let Some(witness_args_type) = witness_args.input_type().to_opt() {
         let witness_args_input_type: Bytes = witness_args_type.unpack();
         match u8::from(witness_args_input_type[0]) {
             CREATE => verify_cota_define_smt(witness_args_input_type)?,
             MINT => verify_cota_mint_smt(witness_args_input_type)?,
             WITHDRAW => verify_cota_withdraw_smt(witness_args_input_type)?,
-            CLAIM => {}
+            CLAIM => verify_cota_claim_smt(cota_type, witness_args_input_type)?,
             UPDATE => {}
             _ => return Err(Error::WitnessTypeParseError),
         }
