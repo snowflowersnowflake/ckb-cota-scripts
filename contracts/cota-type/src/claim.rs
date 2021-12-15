@@ -17,6 +17,18 @@ use script_utils::cota::Cota;
 use script_utils::helper::u16_from_slice;
 use script_utils::{constants::BYTE32_ZEROS, error::Error, smt::LibCKBSmt};
 
+fn check_claim_action(action: Bytes, claimed_count: u32) -> Result<(), Error> {
+    let mut action_vec: Vec<u8> = Vec::new();
+    action_vec.extend("Claim ".as_bytes());
+    action_vec.extend(claimed_count.to_be_bytes());
+    action_vec.extend(" NFTs".as_bytes());
+    let action_bytes: Bytes = action_vec.into();
+    if action_bytes != action {
+        return Err(Error::CoTANFTActionError);
+    }
+    Ok(())
+}
+
 fn load_withdrawal_smt_root_from_cell_dep(cota_type: &Script) -> Result<[u8; 32], Error> {
     let withdrawal_cota_cell_dep = load_cell(0, Source::CellDep)?;
     if let Some(dep_cota_type) = withdrawal_cota_cell_dep.type_().to_opt() {
@@ -46,6 +58,9 @@ pub fn verify_cota_claim_smt(
     let claim_entries = ClaimCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
     let withdrawal_cota_smt_root = load_withdrawal_smt_root_from_cell_dep(&cota_type)?;
+
+    let claimed_count = claim_entries.claim_keys().len() as u32;
+    check_claim_action(claim_entries.action().raw_data(), claimed_count)?;
 
     let mut withdrawal_keys: Vec<u8> = Vec::new();
     let mut withdrawal_values: Vec<u8> = Vec::new();
