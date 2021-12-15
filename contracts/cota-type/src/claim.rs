@@ -129,12 +129,7 @@ pub fn verify_cota_claim_smt(
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(cota_smt_root) = output_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(
-                &cota_smt_root[..],
-                &claimed_keys[..],
-                &claimed_values[..],
-                &proof[..],
-            )
+            .smt_verify(&cota_smt_root, &claimed_keys, &claimed_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
@@ -143,10 +138,10 @@ pub fn verify_cota_claim_smt(
         let withdrawal_proof = claim_entries.withdrawal_proof().raw_data().to_vec();
         lib_ckb_smt
             .smt_verify(
-                &withdrawal_cota_smt_root[..],
-                &withdrawal_keys[..],
-                &withdrawal_values[..],
-                &withdrawal_proof[..],
+                &withdrawal_cota_smt_root,
+                &withdrawal_keys,
+                &withdrawal_values,
+                &withdrawal_proof,
             )
             .map_err(|_| Error::ClaimedCoTAWithdrawalSMTVerifyFailed)?;
     }
@@ -159,12 +154,7 @@ pub fn verify_cota_claim_smt(
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
     if let Some(cota_smt_root) = input_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(
-                &cota_smt_root[..],
-                &claimed_keys[..],
-                &claimed_values[..],
-                &proof[..],
-            )
+            .smt_verify(&cota_smt_root, &claimed_keys, &claimed_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
     Ok(())
