@@ -130,12 +130,7 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(cota_smt_root) = output_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(
-                &cota_smt_root[..],
-                &cota_keys[..],
-                &cota_values[..],
-                &proof[..],
-            )
+            .smt_verify(&cota_smt_root, &cota_keys, &cota_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
@@ -143,12 +138,7 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
     if let Some(cota_smt_root) = input_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(
-                &cota_smt_root[..],
-                &cota_keys[..],
-                &cota_old_values[..],
-                &proof[..],
-            )
+            .smt_verify(&cota_smt_root, &cota_keys, &cota_old_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
     Ok(())

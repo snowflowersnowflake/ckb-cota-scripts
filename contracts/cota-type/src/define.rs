@@ -95,12 +95,7 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(define_smt_root) = output_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(
-                &define_smt_root[..],
-                &define_keys[..],
-                &define_values[..],
-                &proof[..],
-            )
+            .smt_verify(&define_smt_root, &define_keys, &define_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
@@ -112,12 +107,7 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
     }
     if let Some(define_smt_root) = input_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(
-                &define_smt_root[..],
-                &define_keys[..],
-                &define_values[..],
-                &proof[..],
-            )
+            .smt_verify(&define_smt_root, &define_keys, &define_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
     Ok(())

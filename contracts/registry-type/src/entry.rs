@@ -98,7 +98,7 @@ fn handle_update() -> Result<(), Error> {
 
     if let Some(smt_root) = output_registry.smt_root {
         lib_ckb_smt
-            .smt_verify(&smt_root, &keys[..], &values[..], &proof[..])
+            .smt_verify(&smt_root, &keys, &values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
@@ -108,7 +108,7 @@ fn handle_update() -> Result<(), Error> {
             values.extend(&BYTE32_ZEROS);
         }
         lib_ckb_smt
-            .smt_verify(&smt_root[..], &keys[..], &values[..], &proof[..])
+            .smt_verify(&smt_root, &keys, &values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
