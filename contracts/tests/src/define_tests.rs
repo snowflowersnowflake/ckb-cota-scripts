@@ -1,6 +1,4 @@
-use crate::constants::{
-    BYTE10_ZEROS, BYTE23_ZEROS, BYTE32_ZEROS, DEFINE_NFT_SMT_TYPE, HOLD_NFT_SMT_TYPE,
-};
+use crate::constants::{BYTE32_ZEROS, DEFINE_NFT_SMT_TYPE, HOLD_NFT_SMT_TYPE};
 use crate::{assert_script_error, Loader};
 use blake2b_rs::Blake2bBuilder;
 use ckb_testtool::ckb_types::{
@@ -13,7 +11,7 @@ use ckb_testtool::context::random_out_point;
 use ckb_testtool::{builtin::ALWAYS_SUCCESS, context::Context};
 use cota_smt::define::DefineCotaNFTEntriesBuilder;
 use cota_smt::{
-    common::{BytesBuilder, Uint16Builder, Uint32Builder, *},
+    common::{BytesBuilder, Uint16, Uint32, *},
     smt::{Blake2bHasher, H256, SMT},
 };
 use rand::{thread_rng, Rng};
@@ -73,33 +71,12 @@ fn generate_define_cota_nft_smt_data(
     } else {
         cota_id.copy_from_slice(&ret[0..20]);
     }
-    let mut cota_id_bytes = [Byte::from(0); 20];
-    cota_id_bytes.copy_from_slice(
-        &cota_id
-            .iter()
-            .map(|v| Byte::from(*v))
-            .collect::<Vec<Byte>>(),
-    );
 
-    let mut define_smt_type = [Byte::from(0); 2];
-    let smt_type = if define_error == DefineError::CoTANFTSmtTypeError {
-        HOLD_NFT_SMT_TYPE
+    let total_vec = [0u8, 0u8, 0u8, 100u8];
+    let issued_vec = if define_error == DefineError::CoTADefineIssuedError {
+        [0u8, 0u8, 0u8, 100u8]
     } else {
-        DEFINE_NFT_SMT_TYPE
-    };
-    define_smt_type.copy_from_slice(
-        &smt_type
-            .to_be_bytes()
-            .iter()
-            .map(|v| Byte::from(*v))
-            .collect::<Vec<Byte>>(),
-    );
-
-    let total_bytes = [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(100)];
-    let issued_bytes = if define_error == DefineError::CoTADefineIssuedError {
-        [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(100)]
-    } else {
-        [Byte::from(0), Byte::from(0), Byte::from(0), Byte::from(0)]
+        [0u8, 0u8, 0u8, 0u8]
     };
 
     let leaves_count = 100;
@@ -123,9 +100,14 @@ fn generate_define_cota_nft_smt_data(
     let mut update_old_leaves: Vec<(H256, H256)> = Vec::with_capacity(define_count);
     let mut update_leaves: Vec<(H256, H256)> = Vec::with_capacity(define_count);
 
+    let define_smt_type = if define_error == DefineError::CoTANFTSmtTypeError {
+        HOLD_NFT_SMT_TYPE
+    } else {
+        DEFINE_NFT_SMT_TYPE
+    };
     for _ in 0..define_count {
-        let cota_nft_id = CotaIdBuilder::default().set(cota_id_bytes).build();
-        let smt_type = Uint16Builder::default().set(define_smt_type).build();
+        let cota_nft_id = CotaId::from_slice(&cota_id).unwrap();
+        let smt_type = Uint16::from_slice(&define_smt_type.to_be_bytes()).unwrap();
         let define_key = DefineCotaNFTIdBuilder::default()
             .cota_id(cota_nft_id)
             .smt_type(smt_type)
@@ -133,24 +115,19 @@ fn generate_define_cota_nft_smt_data(
 
         define_keys.push(define_key.clone());
 
-        let mut define_key_vec = Vec::new();
-        define_key_vec.extend(define_key.as_slice());
-        define_key_vec.extend(&BYTE10_ZEROS);
         let mut define_key_bytes = [0u8; 32];
-        define_key_bytes.copy_from_slice(&define_key_vec);
+        define_key_bytes[0..22].copy_from_slice(define_key.as_slice());
 
         let key = H256::from(define_key_bytes);
 
         let define_value = DefineCotaNFTValueBuilder::default()
-            .total(Uint32Builder::default().set(total_bytes).build())
-            .issued(Uint32Builder::default().set(issued_bytes).build())
+            .total(Uint32::from_slice(&total_vec).unwrap())
+            .issued(Uint32::from_slice(&issued_vec).unwrap())
             .configure(Byte::from(3))
             .build();
-        let mut define_cota_info_vec = Vec::new();
-        define_cota_info_vec.extend(define_value.as_slice());
-        define_cota_info_vec.extend(&BYTE23_ZEROS);
+
         let mut define_cota_bytes = [0u8; 32];
-        define_cota_bytes.copy_from_slice(&define_cota_info_vec);
+        define_cota_bytes[0..9].copy_from_slice(define_value.as_slice());
         let value = H256::from(define_cota_bytes);
 
         define_values.push(define_value.clone());
@@ -177,10 +154,7 @@ fn generate_define_cota_nft_smt_data(
         .expect("smt proof verify failed");
     assert!(verify_result, "smt proof verify failed");
 
-    let define_cota_old_merkle_proof_compiled = define_cota_merkle_proof
-        .compile(update_old_leaves.clone())
-        .unwrap();
-    let verify_old_leaves_result = define_cota_old_merkle_proof_compiled
+    let verify_old_leaves_result = define_cota_merkle_proof_compiled
         .verify::<Blake2bHasher>(&old_smt_root, update_old_leaves.clone())
         .expect("old smt proof verify failed");
     assert!(verify_old_leaves_result, "old smt proof verify failed");
@@ -259,14 +233,6 @@ fn create_test_context(define_error: DefineError) -> (Context, TransactionView) 
             Bytes::from(hex::decode("7164f48d7a5bf2298166f8d81b81ea4e908e16ad").unwrap()),
         )
         .expect("script");
-    let to_lock_hash_160_vec = &to_lock_script.clone().calc_script_hash().as_bytes()[0..20];
-    let mut to_lock_hash_160 = [Byte::from(0u8); 20];
-    let to_lock_hash_bytes: Vec<Byte> = to_lock_hash_160_vec
-        .to_vec()
-        .iter()
-        .map(|v| Byte::from(*v))
-        .collect();
-    to_lock_hash_160.copy_from_slice(&to_lock_hash_bytes);
 
     let lock_script_dep = CellDepBuilder::default()
         .out_point(always_success_out_point)
