@@ -141,12 +141,12 @@ pub fn verify_cota_claim_smt(
     }
 
     // Verify claimed smt proof of cota input
-    claimed_values.clear();
-    for _ in 0..(claim_entries.hold_values().len() * 2) {
-        claimed_values.extend(&BYTE32_ZEROS);
-    }
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
     if let Some(cota_smt_root) = input_cota.smt_root {
+        claimed_values.clear();
+        for _ in 0..(claim_entries.hold_values().len() * 2) {
+            claimed_values.extend(&BYTE32_ZEROS);
+        }
         lib_ckb_smt
             .smt_verify(&cota_smt_root, &claimed_keys, &claimed_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;

@@ -164,17 +164,17 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
     // Verify mint smt proof of cota output
     let proof = mint_entries.proof().raw_data().to_vec();
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
-    if let Some(mint_smt_root) = output_cota.smt_root {
+    if let Some(cota_smt_root) = output_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(&mint_smt_root, &mint_keys, &mint_new_values, &proof)
+            .smt_verify(&cota_smt_root, &mint_keys, &mint_new_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
     // Verify mint smt proof of cota input
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
-    if let Some(mint_smt_root) = input_cota.smt_root {
+    if let Some(cota_smt_root) = input_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(&mint_smt_root, &mint_keys, &mint_old_values, &proof)
+            .smt_verify(&cota_smt_root, &mint_keys, &mint_old_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
     Ok(())

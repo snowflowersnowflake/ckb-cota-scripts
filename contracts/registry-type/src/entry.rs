@@ -61,21 +61,19 @@ fn handle_update() -> Result<(), Error> {
     if input_lock_hash != output_lock_hash {
         return Err(Error::RegistryCellLockNotSame);
     }
-    // Parse cell data to get registry smt root hash
     let output_registry = Registry::from_data(&load_cell_data(0, Source::Output)?[..])?;
     let input_registry = Registry::from_data(&load_cell_data(0, Source::Input)?[..])?;
     if output_registry.smt_root.is_none() {
         return Err(Error::RegistryCellSMTRootError);
     }
 
-    // Parse witness_args.input_type to get smt leaves and proof to verify smt proof
-    let registry_witness_type = load_witness_args(0, Source::Input)?.input_type();
-    let registry_entries = registry_witness_type
+    let registry_witness_input_type = load_witness_args(0, Source::Input)?.input_type();
+    let registry_entries = registry_witness_input_type
         .to_opt()
         .ok_or(Error::ItemMissing)
-        .map(|witness_type| {
-            let witness_type_: Bytes = witness_type.unpack();
-            CotaNFTRegistryEntries::from_slice(&witness_type_[..])
+        .map(|witness_input_type| {
+            let witness_type: Bytes = witness_input_type.unpack();
+            CotaNFTRegistryEntries::from_slice(&witness_type[..])
         })?
         .map_err(|_| Error::WitnessTypeParseError)?;
 
