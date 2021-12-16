@@ -1,6 +1,5 @@
 use crate::constants::{
-    BYTE10_ZEROS, BYTE32_ZEROS, BYTE6_ZEROS, DEFINE_NFT_SMT_TYPE, HOLD_NFT_SMT_TYPE,
-    WITHDRAWAL_NFT_SMT_TYPE,
+    BYTE32_ZEROS, BYTE6_ZEROS, DEFINE_NFT_SMT_TYPE, HOLD_NFT_SMT_TYPE, WITHDRAWAL_NFT_SMT_TYPE,
 };
 use crate::{assert_script_error, Loader};
 use ckb_testtool::ckb_types::{
@@ -12,7 +11,7 @@ use ckb_testtool::ckb_types::{
 use ckb_testtool::context::random_out_point;
 use ckb_testtool::{builtin::ALWAYS_SUCCESS, context::Context};
 use cota_smt::{
-    common::{BytesBuilder, Uint16Builder, Uint32Builder, *},
+    common::{BytesBuilder, CotaId, Uint16, Uint32, *},
     smt::{blake2b_256, Blake2bHasher, H256, SMT},
     transfer::*,
 };
@@ -52,48 +51,11 @@ fn generate_withdrawal_cota_smt_data(
     to_lock: Script,
     withdrawal_count: usize,
 ) -> ([u8; 32], [u8; 32], Vec<u8>) {
-    let mut hold_smt_type = [Byte::from(0); 2];
-    hold_smt_type.copy_from_slice(
-        &HOLD_NFT_SMT_TYPE
-            .to_be_bytes()
-            .iter()
-            .map(|v| Byte::from(*v))
-            .collect::<Vec<Byte>>(),
-    );
-
-    let mut withdrawal_smt_type = [Byte::from(0); 2];
-    let smt_type = if withdrawal_error == WithdrawalError::CoTANFTSmtTypeError {
+    let withdrawal_smt_type = if withdrawal_error == WithdrawalError::CoTANFTSmtTypeError {
         DEFINE_NFT_SMT_TYPE
     } else {
         WITHDRAWAL_NFT_SMT_TYPE
     };
-    withdrawal_smt_type.copy_from_slice(
-        &smt_type
-            .to_be_bytes()
-            .iter()
-            .map(|v| Byte::from(*v))
-            .collect::<Vec<Byte>>(),
-    );
-
-    let mut out_point_bytes = [Byte::from(0); 24];
-    out_point_bytes.copy_from_slice(
-        &out_point.as_slice()[12..]
-            .iter()
-            .map(|v| Byte::from(*v))
-            .collect::<Vec<Byte>>(),
-    );
-
-    let mut to_lock_bytes = [Byte::from(0); 20];
-    to_lock_bytes.copy_from_slice(
-        &to_lock.calc_script_hash().as_slice()[0..20]
-            .iter()
-            .map(|v| Byte::from(*v))
-            .collect::<Vec<Byte>>(),
-    );
-
-    let characteristic_bytes: Vec<Byte> = [5u8; 20].iter().map(|v| Byte::from(*v)).collect();
-    let mut characteristic: [Byte; 20] = [Byte::from(0); 20];
-    characteristic.copy_from_slice(&characteristic_bytes);
 
     let leaves_count = 100;
     let mut before_withdrawal_smt = SMT::default();
@@ -119,20 +81,11 @@ fn generate_withdrawal_cota_smt_data(
     let mut new_update_leaves: Vec<(H256, H256)> = Vec::with_capacity(withdrawal_count * 2);
 
     let cota_id_vec: Vec<u8> = hex::decode("157a3633c3477d84b604a25e5fca5ca681762c10").unwrap();
-    let cota_id_bytes: Vec<Byte> = cota_id_vec.iter().map(|v| Byte::from(*v)).collect();
-    let mut cota_id: [Byte; 20] = [Byte::from(0); 20];
-    cota_id.copy_from_slice(&cota_id_bytes);
     for index in 0..withdrawal_count {
-        let total_index_bytes = [
-            Byte::from(0),
-            Byte::from(0),
-            Byte::from(0),
-            Byte::from(index as u8),
-        ];
-        let token_index = Uint32Builder::default().set(total_index_bytes).build();
+        let token_index = Uint32::from_slice(&[0u8, 0u8, 0u8, index as u8]).unwrap();
         let hold_key = CotaNFTIdBuilder::default()
-            .cota_id(CotaIdBuilder::default().set(cota_id).build())
-            .smt_type(Uint16Builder::default().set(hold_smt_type).build())
+            .cota_id(CotaId::from_slice(&cota_id_vec).unwrap())
+            .smt_type(Uint16::from_slice(&HOLD_NFT_SMT_TYPE.to_be_bytes()).unwrap())
             .index(token_index.clone())
             .build();
 
@@ -160,15 +113,12 @@ fn generate_withdrawal_cota_smt_data(
             0u8
         };
         let mut hold_value = CotaNFTInfoBuilder::default()
-            .characteristic(CharacteristicBuilder::default().set(characteristic).build())
+            .characteristic(Characteristic::from_slice(&[5u8; 20]).unwrap())
             .configure(Byte::from(configure))
             .state(Byte::from(state))
             .build();
-        let mut hold_value_vec = Vec::new();
-        hold_value_vec.extend(hold_value.as_slice());
-        hold_value_vec.extend(&BYTE10_ZEROS);
         let mut hold_value_bytes = [0u8; 32];
-        hold_value_bytes.copy_from_slice(&hold_value_vec);
+        hold_value_bytes[0..22].copy_from_slice(hold_value.as_slice());
         let value = H256::from(hold_value_bytes);
         hold_values.push(hold_value.clone());
 
@@ -182,16 +132,12 @@ fn generate_withdrawal_cota_smt_data(
             .expect("SMT update leave error");
 
         let withdrawal_key = CotaNFTIdBuilder::default()
-            .cota_id(CotaIdBuilder::default().set(cota_id).build())
-            .smt_type(Uint16Builder::default().set(withdrawal_smt_type).build())
+            .cota_id(CotaId::from_slice(&cota_id_vec).unwrap())
+            .smt_type(Uint16::from_slice(&withdrawal_smt_type.to_be_bytes()).unwrap())
             .index(token_index)
             .build();
-        let mut withdrawal_key_vec = Vec::new();
-        withdrawal_key_vec.extend(withdrawal_key.as_slice());
-        withdrawal_key_vec.extend(&BYTE6_ZEROS);
         let mut withdrawal_key_bytes = [0u8; 32];
-        withdrawal_key_bytes.copy_from_slice(&withdrawal_key_vec);
-
+        withdrawal_key_bytes[0..26].copy_from_slice(withdrawal_key.as_slice());
         let key = H256::from(withdrawal_key_bytes);
         withdrawal_keys.push(withdrawal_key);
 
@@ -200,8 +146,8 @@ fn generate_withdrawal_cota_smt_data(
         }
         let withdrawal_value = WithdrawalCotaNFTValueBuilder::default()
             .nft_info(hold_value)
-            .out_point(OutPointSliceBuilder::default().set(out_point_bytes).build())
-            .to(LockHashSliceBuilder::default().set(to_lock_bytes).build())
+            .out_point(OutPointSlice::from_slice(&out_point.as_slice()[12..]).unwrap())
+            .to(LockHashSlice::from_slice(&to_lock.calc_script_hash().as_slice()[0..20]).unwrap())
             .build();
         let value = H256::from(blake2b_256(withdrawal_value.as_slice()));
         withdrawal_values.push(withdrawal_value.clone());
