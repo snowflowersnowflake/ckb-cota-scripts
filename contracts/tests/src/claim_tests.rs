@@ -468,7 +468,7 @@ fn test_claim_cota_smt_proof_verify_error() {
 }
 
 #[test]
-fn test_cota_withdrawal_smt_proof_verify_error() {
+fn test_claim_cota_withdrawal_smt_proof_verify_error() {
     let (mut context, tx) = create_test_context(ClaimError::ClaimedCoTAWithdrawalSMTVerifyFailed);
 
     let tx = context.complete_tx(tx);
@@ -478,7 +478,7 @@ fn test_cota_withdrawal_smt_proof_verify_error() {
 }
 
 #[test]
-fn test_cota_withdraw_dep_error() {
+fn test_claim_cota_withdraw_dep_error() {
     let (mut context, tx) = create_test_context(ClaimError::CoTANFTWithdrawalDepError);
 
     let tx = context.complete_tx(tx);
@@ -488,7 +488,7 @@ fn test_cota_withdraw_dep_error() {
 }
 
 #[test]
-fn test_withdraw_cota_smt_type_error() {
+fn test_claim_cota_smt_type_error() {
     let (mut context, tx) = create_test_context(ClaimError::CoTANFTSmtTypeError);
 
     let tx = context.complete_tx(tx);
@@ -498,7 +498,7 @@ fn test_withdraw_cota_smt_type_error() {
 }
 
 #[test]
-fn test_withdraw_cota_action_error() {
+fn test_claim_cota_action_error() {
     let (mut context, tx) = create_test_context(ClaimError::CoTANFTActionError);
 
     let tx = context.complete_tx(tx);
