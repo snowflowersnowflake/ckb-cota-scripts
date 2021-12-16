@@ -19,11 +19,11 @@ use script_utils::{
 };
 
 fn validate_nft_info(
-    hold_new_value: &CotaNFTInfo,
     hold_old_value: &CotaNFTInfo,
+    hold_new_value: &CotaNFTInfo,
 ) -> Result<(), Error> {
-    let output_nft = Nft::from_data(hold_new_value.as_slice())?;
     let input_nft = Nft::from_data(hold_old_value.as_slice())?;
+    let output_nft = Nft::from_data(hold_new_value.as_slice())?;
 
     validate_immutable_nft_fields(&input_nft, &output_nft)?;
     validate_nft_claim(&input_nft, &output_nft)?;

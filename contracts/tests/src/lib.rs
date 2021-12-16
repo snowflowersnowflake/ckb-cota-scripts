@@ -20,6 +20,9 @@ mod withdraw_tests;
 #[cfg(test)]
 mod claim_tests;
 
+#[cfg(test)]
+mod update_tests;
+
 mod constants;
 
 const TEST_ENV_VAR: &str = "CAPSULE_TEST_ENV";
