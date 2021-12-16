@@ -78,9 +78,9 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
 
     check_withdraw_action(&withdraw_entries)?;
 
-    let mut cota_keys: Vec<u8> = Vec::new();
-    let mut cota_values: Vec<u8> = Vec::new();
-    let mut cota_old_values: Vec<u8> = Vec::new();
+    let mut withdraw_keys: Vec<u8> = Vec::new();
+    let mut withdraw_new_values: Vec<u8> = Vec::new();
+    let mut withdraw_old_values: Vec<u8> = Vec::new();
 
     let hold_keys = withdraw_entries.hold_keys();
     for index in 0..hold_keys.len() {
@@ -95,10 +95,10 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
         if u16_from_slice(withdrawal_key.smt_type().as_slice()) != WITHDRAWAL_NFT_SMT_TYPE {
             return Err(Error::CoTANFTSmtTypeError);
         }
-        cota_keys.extend(hold_key.as_slice());
-        cota_keys.extend(&BYTE6_ZEROS);
-        cota_keys.extend(withdrawal_key.as_slice());
-        cota_keys.extend(&BYTE6_ZEROS);
+        withdraw_keys.extend(hold_key.as_slice());
+        withdraw_keys.extend(&BYTE6_ZEROS);
+        withdraw_keys.extend(withdrawal_key.as_slice());
+        withdraw_keys.extend(&BYTE6_ZEROS);
 
         let withdrawal_value = withdraw_entries
             .withdrawal_values()
@@ -115,11 +115,11 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
         if hold_value.as_slice() != withdrawal_value.nft_info().as_slice() {
             return Err(Error::CoTAWithdrawalNFTInfoError);
         }
-        cota_values.extend(&BYTE32_ZEROS);
-        cota_values.extend(&blake2b_256(withdrawal_value.as_slice()));
-        cota_old_values.extend(hold_value.as_slice());
-        cota_old_values.extend(&BYTE10_ZEROS);
-        cota_old_values.extend(&BYTE32_ZEROS);
+        withdraw_new_values.extend(&BYTE32_ZEROS);
+        withdraw_new_values.extend(&blake2b_256(withdrawal_value.as_slice()));
+        withdraw_old_values.extend(hold_value.as_slice());
+        withdraw_old_values.extend(&BYTE10_ZEROS);
+        withdraw_old_values.extend(&BYTE32_ZEROS);
     }
 
     let mut context = unsafe { CKBDLContext::<[u8; 128 * 1024]>::new() };
@@ -130,7 +130,7 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(cota_smt_root) = output_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(&cota_smt_root, &cota_keys, &cota_values, &proof)
+            .smt_verify(&cota_smt_root, &withdraw_keys, &withdraw_new_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
@@ -138,7 +138,7 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
     if let Some(cota_smt_root) = input_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(&cota_smt_root, &cota_keys, &cota_old_values, &proof)
+            .smt_verify(&cota_smt_root, &withdraw_keys, &withdraw_old_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
     Ok(())

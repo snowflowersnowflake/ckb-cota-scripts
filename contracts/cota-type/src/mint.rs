@@ -126,9 +126,9 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
     check_cota_definition_and_withdrawal(&mint_entries)?;
     check_mint_action(&mint_entries)?;
 
-    let mut cota_keys: Vec<u8> = Vec::new();
-    let mut cota_new_values: Vec<u8> = Vec::new();
-    let mut cota_old_values: Vec<u8> = Vec::new();
+    let mut mint_keys: Vec<u8> = Vec::new();
+    let mut mint_new_values: Vec<u8> = Vec::new();
+    let mut mint_old_values: Vec<u8> = Vec::new();
 
     let define_key: DefineCotaNFTId = mint_entries.define_keys().get(0).ok_or(Error::Encoding)?;
     let define_old_values = mint_entries.define_old_values();
@@ -136,12 +136,12 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
     let define_new_value = define_new_values.get(0).ok_or(Error::Encoding)?;
     let define_old_value = define_old_values.get(0).ok_or(Error::Encoding)?;
 
-    cota_keys.extend(define_key.as_slice());
-    cota_keys.extend(&BYTE10_ZEROS);
-    cota_old_values.extend(define_old_value.as_slice());
-    cota_old_values.extend(&BYTE23_ZEROS);
-    cota_new_values.extend(define_new_value.as_slice());
-    cota_new_values.extend(&BYTE23_ZEROS);
+    mint_keys.extend(define_key.as_slice());
+    mint_keys.extend(&BYTE10_ZEROS);
+    mint_old_values.extend(define_old_value.as_slice());
+    mint_old_values.extend(&BYTE23_ZEROS);
+    mint_new_values.extend(define_new_value.as_slice());
+    mint_new_values.extend(&BYTE23_ZEROS);
 
     for index in 0..mint_entries.withdrawal_keys().len() {
         let withdrawal_key = mint_entries
@@ -152,10 +152,10 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
             .withdrawal_values()
             .get(index)
             .ok_or(Error::Encoding)?;
-        cota_keys.extend(withdrawal_key.as_slice());
-        cota_keys.extend(&BYTE6_ZEROS);
-        cota_old_values.extend(BYTE32_ZEROS);
-        cota_new_values.extend(blake2b_256(withdrawal_value.as_slice()));
+        mint_keys.extend(withdrawal_key.as_slice());
+        mint_keys.extend(&BYTE6_ZEROS);
+        mint_old_values.extend(BYTE32_ZEROS);
+        mint_new_values.extend(blake2b_256(withdrawal_value.as_slice()));
     }
 
     let mut context = unsafe { CKBDLContext::<[u8; 128 * 1024]>::new() };
@@ -166,7 +166,7 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(mint_smt_root) = output_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(&mint_smt_root, &cota_keys, &cota_new_values, &proof)
+            .smt_verify(&mint_smt_root, &mint_keys, &mint_new_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
@@ -174,7 +174,7 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
     if let Some(mint_smt_root) = input_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(&mint_smt_root, &cota_keys, &cota_old_values, &proof)
+            .smt_verify(&mint_smt_root, &mint_keys, &mint_old_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
     Ok(())

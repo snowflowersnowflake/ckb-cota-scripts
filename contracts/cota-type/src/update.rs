@@ -48,17 +48,17 @@ pub fn verify_cota_update_smt(witness_args_input_type: Bytes) -> Result<(), Erro
 
     check_update_action(update_entries.action().raw_data())?;
 
-    let mut cota_keys: Vec<u8> = Vec::new();
-    let mut cota_values: Vec<u8> = Vec::new();
-    let mut cota_old_values: Vec<u8> = Vec::new();
+    let mut update_keys: Vec<u8> = Vec::new();
+    let mut update_new_values: Vec<u8> = Vec::new();
+    let mut update_old_values: Vec<u8> = Vec::new();
 
     for index in 0..hold_keys.len() {
         let hold_key = hold_keys.get(index).ok_or(Error::Encoding)?;
         if u16_from_slice(hold_key.smt_type().as_slice()) != HOLD_NFT_SMT_TYPE {
             return Err(Error::CoTANFTSmtTypeError);
         }
-        cota_keys.extend(hold_key.as_slice());
-        cota_keys.extend(&BYTE6_ZEROS);
+        update_keys.extend(hold_key.as_slice());
+        update_keys.extend(&BYTE6_ZEROS);
 
         let hold_new_value = update_entries
             .hold_new_values()
@@ -71,10 +71,10 @@ pub fn verify_cota_update_smt(witness_args_input_type: Bytes) -> Result<(), Erro
 
         validate_nft_info(&hold_old_value, &hold_new_value)?;
 
-        cota_values.extend(hold_new_value.as_slice());
-        cota_values.extend(&BYTE10_ZEROS);
-        cota_old_values.extend(hold_old_value.as_slice());
-        cota_old_values.extend(&BYTE10_ZEROS);
+        update_new_values.extend(hold_new_value.as_slice());
+        update_new_values.extend(&BYTE10_ZEROS);
+        update_old_values.extend(hold_old_value.as_slice());
+        update_old_values.extend(&BYTE10_ZEROS);
     }
 
     let mut context = unsafe { CKBDLContext::<[u8; 128 * 1024]>::new() };
@@ -85,7 +85,7 @@ pub fn verify_cota_update_smt(witness_args_input_type: Bytes) -> Result<(), Erro
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(cota_smt_root) = output_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(&cota_smt_root, &cota_keys, &cota_values, &proof)
+            .smt_verify(&cota_smt_root, &update_keys, &update_new_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
@@ -93,7 +93,7 @@ pub fn verify_cota_update_smt(witness_args_input_type: Bytes) -> Result<(), Erro
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
     if let Some(cota_smt_root) = input_cota.smt_root {
         lib_ckb_smt
-            .smt_verify(&cota_smt_root, &cota_keys, &cota_old_values, &proof)
+            .smt_verify(&cota_smt_root, &update_keys, &update_old_values, &proof)
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
     Ok(())
