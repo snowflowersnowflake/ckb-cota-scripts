@@ -32,10 +32,21 @@ fn validate_nft_info(
     Ok(())
 }
 
+fn check_update_action(action: Bytes) -> Result<(), Error> {
+    let action_vec: Vec<u8> = "Update NFT information".as_bytes().to_vec();
+    let action_bytes: Bytes = action_vec.into();
+    if action_bytes != action {
+        return Err(Error::CoTANFTActionError);
+    }
+    Ok(())
+}
+
 pub fn verify_cota_update_smt(witness_args_input_type: Bytes) -> Result<(), Error> {
     let update_entries = UpdateCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
     let hold_keys = update_entries.hold_keys();
+
+    check_update_action(update_entries.action().raw_data())?;
 
     let mut cota_keys: Vec<u8> = Vec::new();
     let mut cota_values: Vec<u8> = Vec::new();
