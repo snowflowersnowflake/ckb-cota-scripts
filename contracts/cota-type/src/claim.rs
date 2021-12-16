@@ -118,7 +118,7 @@ pub fn verify_cota_claim_smt(
     let mut context = unsafe { CKBDLContext::<[u8; 128 * 1024]>::new() };
     let lib_ckb_smt = LibCKBSmt::load(&mut context);
 
-    // Verify claimed smt proof of cota nft output
+    // Verify claimed smt proof of cota output
     let proof = claim_entries.proof().raw_data().to_vec();
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(cota_smt_root) = output_cota.smt_root {
@@ -140,7 +140,7 @@ pub fn verify_cota_claim_smt(
             .map_err(|_| Error::ClaimedCoTAWithdrawalSMTVerifyFailed)?;
     }
 
-    // Verify claimed smt proof of cota nft input
+    // Verify claimed smt proof of cota input
     claimed_values.clear();
     for _ in 0..(claim_entries.hold_values().len() * 2) {
         claimed_values.extend(&BYTE32_ZEROS);

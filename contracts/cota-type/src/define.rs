@@ -90,7 +90,7 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
     let mut context = unsafe { CKBDLContext::<[u8; 128 * 1024]>::new() };
     let lib_ckb_smt = LibCKBSmt::load(&mut context);
 
-    // Verify definition smt proof of cota nft output
+    // Verify definition smt proof of cota output
     let proof = define_entries.proof().raw_data().to_vec();
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(define_smt_root) = output_cota.smt_root {
@@ -99,7 +99,7 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
-    // Verify definition smt proof of cota nft input
+    // Verify definition smt proof of cota input
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
     define_values.clear();
     for _ in 0..define_entries.define_keys().len() {

@@ -161,7 +161,7 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
     let mut context = unsafe { CKBDLContext::<[u8; 128 * 1024]>::new() };
     let lib_ckb_smt = LibCKBSmt::load(&mut context);
 
-    // Verify mint smt proof of cota nft output
+    // Verify mint smt proof of cota output
     let proof = mint_entries.proof().raw_data().to_vec();
     let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
     if let Some(mint_smt_root) = output_cota.smt_root {
@@ -170,7 +170,7 @@ pub fn verify_cota_mint_smt(witness_args_input_type: Bytes) -> Result<(), Error>
             .map_err(|_| Error::SMTProofVerifyFailed)?;
     }
 
-    // Verify mint smt proof of cota nft input
+    // Verify mint smt proof of cota input
     let input_cota = Cota::from_data(&load_cell_data(0, Source::GroupInput)?[..])?;
     if let Some(mint_smt_root) = input_cota.smt_root {
         lib_ckb_smt
