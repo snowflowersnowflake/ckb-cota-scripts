@@ -7,6 +7,7 @@ pub mod definition;
 pub mod error;
 pub mod helper;
 pub mod nft;
+pub mod nft_validator;
 pub mod registry;
 
 pub mod smt {

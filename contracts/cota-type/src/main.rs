@@ -9,6 +9,7 @@ mod claim;
 mod define;
 mod entry;
 mod mint;
+mod update;
 mod withdraw;
 
 use ckb_std::default_alloc;

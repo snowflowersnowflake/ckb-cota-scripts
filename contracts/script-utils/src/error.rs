@@ -36,7 +36,11 @@ pub enum Error {
     CoTANFTCannotTransferAfterClaim,
     CoTAWithdrawalNFTInfoError,
     CoTANFTWithdrawalDepError,
-    ClaimedCoTAWithdrawalSMTVerifyFailed,
+    ClaimedCoTAWithdrawalSMTVerifyFailed = 35,
+    CoTALockedNFTCannotUpdateInfo,
+    CoTALockedNFTCannotClaim,
+    CoTANFTClaimError,
+    CoTANFTLockError,
 }
 
 impl From<SysError> for Error {
