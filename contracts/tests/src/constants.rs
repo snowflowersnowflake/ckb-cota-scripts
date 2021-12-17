@@ -13,11 +13,6 @@ pub const COTA_TYPE_CODE_HASH: [u8; 32] = [
 ];
 
 pub const BYTE32_ZEROS: [u8; 32] = [0u8; 32];
-pub const BYTE23_ZEROS: [u8; 23] = [0u8; 23];
-pub const BYTE10_ZEROS: [u8; 10] = [0u8; 10];
-pub const BYTE6_ZEROS: [u8; 6] = [0u8; 6];
-
-pub const SMT_ROOT_LEN: usize = 32;
 
 pub const DEFINE_NFT_SMT_TYPE: u16 = 33024u16; // 0x8100
 pub const HOLD_NFT_SMT_TYPE: u16 = 33025u16; // 0x8101

@@ -15,8 +15,6 @@ pub const BYTE23_ZEROS: [u8; 23] = [0u8; 23];
 pub const BYTE10_ZEROS: [u8; 10] = [0u8; 10];
 pub const BYTE6_ZEROS: [u8; 6] = [0u8; 6];
 
-pub const SMT_ROOT_LEN: usize = 32;
-
 pub const DEFINE_NFT_SMT_TYPE: u16 = 33024u16; // 0x8100
 pub const HOLD_NFT_SMT_TYPE: u16 = 33025u16; // 0x8101
 pub const WITHDRAWAL_NFT_SMT_TYPE: u16 = 33026u16; // 0x8102

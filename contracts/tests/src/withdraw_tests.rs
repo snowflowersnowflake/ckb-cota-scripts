@@ -1,5 +1,5 @@
 use crate::constants::{
-    BYTE32_ZEROS, BYTE6_ZEROS, DEFINE_NFT_SMT_TYPE, HOLD_NFT_SMT_TYPE, WITHDRAWAL_NFT_SMT_TYPE,
+    BYTE32_ZEROS, DEFINE_NFT_SMT_TYPE, HOLD_NFT_SMT_TYPE, WITHDRAWAL_NFT_SMT_TYPE,
 };
 use crate::{assert_script_error, Loader};
 use ckb_testtool::ckb_types::{
@@ -89,12 +89,8 @@ fn generate_withdrawal_cota_smt_data(
             .index(token_index.clone())
             .build();
 
-        let mut hold_key_vec = Vec::new();
-        hold_key_vec.extend(hold_key.as_slice());
-        hold_key_vec.extend(&BYTE6_ZEROS);
         let mut hold_key_bytes = [0u8; 32];
-        hold_key_bytes.copy_from_slice(&hold_key_vec);
-
+        hold_key_bytes[0..26].copy_from_slice(hold_key.as_slice());
         let key = H256::from(hold_key_bytes);
         hold_keys.push(hold_key.clone());
 
