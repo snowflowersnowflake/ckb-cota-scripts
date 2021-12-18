@@ -3,6 +3,7 @@ build:
 	capsule build
 
 build-release:
+	cp libs/* build/release/
 	capsule build --release
 
 test:
