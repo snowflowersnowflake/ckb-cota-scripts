@@ -84,7 +84,6 @@ fn generate_withdrawal_cota_nft_smt_data(
             .configure(Byte::from(0u8))
             .state(Byte::from(0u8))
             .build();
-        update_leaves.push((key, H256::from(BYTE32_ZEROS)));
         withdrawal_smt
             .update(key, H256::from(BYTE32_ZEROS))
             .expect("SMT update leave error");
