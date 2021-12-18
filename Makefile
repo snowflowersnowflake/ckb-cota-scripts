@@ -3,6 +3,7 @@ build:
 	capsule build
 
 build-release:
+	cd contracts && cargo fmt
 	cp libs/* build/release/
 	capsule build --release
 
