@@ -65,14 +65,12 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
         return Err(Error::CoTATypeArgsNotEqualLockHash);
     }
 
-    // Parse cell data to get cota smt root hash
-    let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
-    if output_cota.smt_root.is_none() {
-        return Err(Error::CoTACellSMTRootError);
-    }
-
     let witness_args = load_group_input_witness_args_with_type(cota_type)?;
     if let Some(witness_args_type) = witness_args.input_type().to_opt() {
+        let output_cota = Cota::from_data(&load_cell_data(0, Source::GroupOutput)?[..])?;
+        if output_cota.smt_root.is_none() {
+            return Err(Error::CoTACellSMTRootError);
+        }
         let witness_args_input_type: Bytes = witness_args_type.unpack();
         match u8::from(witness_args_input_type[0]) {
             CREATE => verify_cota_define_smt(witness_args_input_type)?,
@@ -83,7 +81,11 @@ fn handle_update(cota_type: &Script) -> Result<(), Error> {
             _ => return Err(Error::WitnessTypeParseError),
         }
     } else {
-        return Err(Error::WitnessTypeParseError);
+        let output_cota_cell_data = load_cell_data(0, Source::GroupOutput)?;
+        let input_cota_cell_data = load_cell_data(0, Source::GroupInput)?;
+        if output_cota_cell_data != input_cota_cell_data {
+            return Err(Error::CoTACellDataNotSame);
+        }
     }
     Ok(())
 }

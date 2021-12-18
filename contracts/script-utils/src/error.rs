@@ -41,6 +41,7 @@ pub enum Error {
     CoTALockedNFTCannotClaim,
     CoTANFTClaimError,
     CoTANFTLockError,
+    CoTACellDataNotSame,
 }
 
 impl From<SysError> for Error {
