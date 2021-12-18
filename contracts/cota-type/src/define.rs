@@ -53,7 +53,7 @@ pub fn verify_cota_define_smt(witness_args_input_type: Bytes) -> Result<(), Erro
     let define_entries = DefineCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
 
-    if define_entries.define_keys().len() > 1 {
+    if define_entries.define_keys().len() != 1 {
         return Err(Error::LengthInvalid);
     }
 

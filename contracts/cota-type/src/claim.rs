@@ -50,6 +50,10 @@ pub fn verify_cota_claim_smt(
 ) -> Result<(), Error> {
     let claim_entries = ClaimCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
+    let hold_keys = claim_entries.hold_keys();
+    if hold_keys.is_empty() {
+        return Err(Error::LengthInvalid);
+    }
     let withdrawal_cota_smt_root = load_withdrawal_smt_root_from_cell_dep(&cota_type)?;
 
     let claimed_count = claim_entries.claim_keys().len() as u32;
@@ -62,7 +66,7 @@ pub fn verify_cota_claim_smt(
     let mut claimed_keys: Vec<u8> = Vec::new();
     let mut claimed_values: Vec<u8> = Vec::new();
 
-    for index in 0..claim_entries.hold_keys().len() {
+    for index in 0..hold_keys.len() {
         let hold_key = claim_entries
             .hold_keys()
             .get(index)

@@ -45,6 +45,9 @@ pub fn verify_cota_update_smt(witness_args_input_type: Bytes) -> Result<(), Erro
     let update_entries = UpdateCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
     let hold_keys = update_entries.hold_keys();
+    if hold_keys.is_empty() {
+        return Err(Error::LengthInvalid);
+    }
 
     check_update_action(update_entries.action().raw_data())?;
 

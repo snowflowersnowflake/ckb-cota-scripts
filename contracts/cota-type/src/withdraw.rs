@@ -71,18 +71,21 @@ fn check_withdraw_action(withdraw_entries: &WithdrawalCotaNFTEntries) -> Result<
 }
 
 pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Error> {
-    let cota_input_out_point = load_input_out_point(0, Source::GroupInput)?;
-
     let withdraw_entries = WithdrawalCotaNFTEntries::from_slice(&witness_args_input_type[1..])
         .map_err(|_e| Error::WitnessTypeParseError)?;
+
+    let hold_keys = withdraw_entries.hold_keys();
+    if hold_keys.is_empty() {
+        return Err(Error::LengthInvalid);
+    }
 
     check_withdraw_action(&withdraw_entries)?;
 
     let mut withdraw_keys: Vec<u8> = Vec::new();
     let mut withdraw_new_values: Vec<u8> = Vec::new();
     let mut withdraw_old_values: Vec<u8> = Vec::new();
+    let cota_input_out_point = load_input_out_point(0, Source::GroupInput)?;
 
-    let hold_keys = withdraw_entries.hold_keys();
     for index in 0..hold_keys.len() {
         let hold_key = hold_keys.get(index).ok_or(Error::Encoding)?;
         if u16_from_slice(hold_key.smt_type().as_slice()) != HOLD_NFT_SMT_TYPE {
