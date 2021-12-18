@@ -30,6 +30,7 @@ const COTA_NFT_SMT_TYPE_ERROR: i8 = 23;
 const COTA_NFT_ACTION_ERROR: i8 = 24;
 const COTA_CELL_LOCK_NOT_SAME: i8 = 25;
 const COTA_ID_INVALID: i8 = 26;
+const COTA_CELL_DATA_NOT_SAME: i8 = 39;
 
 #[derive(PartialEq, Copy, Clone)]
 enum DefineError {
@@ -45,6 +46,7 @@ enum DefineError {
     CoTANFTActionError,
     CoTACellLockNotSame,
     CoTAIdInvalid,
+    CoTACellDataNotSame,
 }
 
 const DEFINE_COTA: u8 = 1;
@@ -328,6 +330,7 @@ fn create_test_context(define_error: DefineError) -> (Context, TransactionView) 
 
     let witnesses = match define_error {
         DefineError::WitnessTypeParseError => vec![error_witness_args.as_bytes()],
+        DefineError::CoTACellDataNotSame => vec![WitnessArgsBuilder::default().build().as_bytes()],
         _ => vec![witness_args.as_bytes()],
     };
 
@@ -464,4 +467,14 @@ fn test_define_cota_id_error() {
     // run
     let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
     assert_script_error(err, COTA_ID_INVALID);
+}
+
+#[test]
+fn test_cota_cell_data_not_same_error() {
+    let (mut context, tx) = create_test_context(DefineError::CoTACellDataNotSame);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+    assert_script_error(err, COTA_CELL_DATA_NOT_SAME);
 }
