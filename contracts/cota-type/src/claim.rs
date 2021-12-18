@@ -96,16 +96,13 @@ pub fn verify_cota_claim_smt(
         claimed_values.extend(&BYTE10_ZEROS);
         claimed_values.extend(claimed_value.as_slice());
 
-        // collect hold and withdrawal keys for withdrawal smt proof
-        withdrawal_keys.extend(hold_key.as_slice());
-        withdrawal_keys.extend(&BYTE6_ZEROS);
+        // collect withdrawal keys for withdrawal smt proof
         withdrawal_keys.extend(&WITHDRAWAL_NFT_SMT_TYPE.to_be_bytes());
         withdrawal_keys.extend(hold_key.cota_id().as_slice());
         withdrawal_keys.extend(hold_key.index().as_slice());
         withdrawal_keys.extend(&BYTE6_ZEROS);
 
-        // collect hold and withdrawal values for withdrawal smt proof
-        withdrawal_values.extend(&BYTE32_ZEROS);
+        // collect withdrawal values for withdrawal smt proof
         let to = LockHashSlice::from_slice(to_lock_hash_160).map_err(|_e| Error::Encoding)?;
         let withdrawal_cota_value = WithdrawalCotaNFTValueBuilder::default()
             .nft_info(hold_value)
