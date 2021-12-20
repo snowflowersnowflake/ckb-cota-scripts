@@ -35,6 +35,7 @@ const COTA_CELL_DATA_NOT_SAME: i8 = 39;
 #[derive(PartialEq, Copy, Clone)]
 enum DefineError {
     NoError,
+    UnlimitedTotal,
     WitnessTypeParseError,
     SMTProofVerifyFailed,
     CoTACellsCountError,
@@ -74,7 +75,11 @@ fn generate_define_cota_nft_smt_data(
         cota_id.copy_from_slice(&ret[0..20]);
     }
 
-    let total_vec = [0u8, 0u8, 0u8, 100u8];
+    let total_vec = if define_error == DefineError::UnlimitedTotal {
+        [0u8, 0u8, 0u8, 0u8]
+    } else {
+        [0u8, 0u8, 0u8, 100u8]
+    };
     let issued_vec = if define_error == DefineError::CoTADefineIssuedError {
         [0u8, 0u8, 0u8, 100u8]
     } else {
@@ -168,7 +173,12 @@ fn generate_define_cota_nft_smt_data(
 
     let mut action_vec: Vec<u8> = Vec::new();
     action_vec.extend("Create a new NFT collection with ".as_bytes());
-    action_vec.extend(&[0, 0, 0, 100u8]);
+    let define_total = if define_error == DefineError::UnlimitedTotal {
+        "unlimited".as_bytes()
+    } else {
+        &[0, 0, 0, 100u8]
+    };
+    action_vec.extend(define_total);
     action_vec.extend(" edition".as_bytes());
     if define_error == DefineError::CoTANFTActionError {
         action_vec.reverse();
@@ -350,6 +360,18 @@ fn create_test_context(define_error: DefineError) -> (Context, TransactionView) 
 #[test]
 fn test_define_cota_nft_cell_success() {
     let (mut context, tx) = create_test_context(DefineError::NoError);
+
+    let tx = context.complete_tx(tx);
+    // run
+    let cycles = context
+        .verify_tx(&tx, MAX_CYCLES)
+        .expect("pass verification");
+    println!("consume cycles: {}", cycles);
+}
+
+#[test]
+fn test_define_cota_nft_cell_with_unlimited_total_success() {
+    let (mut context, tx) = create_test_context(DefineError::UnlimitedTotal);
 
     let tx = context.complete_tx(tx);
     // run

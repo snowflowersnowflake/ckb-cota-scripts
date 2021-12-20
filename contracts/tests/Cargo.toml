@@ -10,4 +10,5 @@ ckb-testtool = "0.6.1"
 blake2b-rs = "0.2"
 hex = "0.4"
 rand = "0.7"
+script-utils = { path = "../script-utils" }
 cota-smt = {package = "cota-smt", git = "https://github.com/nervina-labs/cota-smt", rev = "a1a8313" }

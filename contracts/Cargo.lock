@@ -1818,6 +1818,7 @@ dependencies = [
  "cota-smt 0.1.0 (git+https://github.com/nervina-labs/cota-smt?rev=a1a8313)",
  "hex",
  "rand 0.7.3",
+ "script-utils",
 ]
 
 [[package]]
