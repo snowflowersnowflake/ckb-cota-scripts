@@ -37,7 +37,12 @@ fn generate_cota_type_id(index: u8) -> Result<[u8; 20], Error> {
 fn check_define_action(action: Bytes, total: Uint32) -> Result<(), Error> {
     let mut action_vec: Vec<u8> = Vec::new();
     action_vec.extend("Create a new NFT collection with ".as_bytes());
-    action_vec.extend(total.as_slice());
+    let define_total = if u32_from_slice(total.as_slice()) == 0 {
+        "unlimited".as_bytes()
+    } else {
+        total.as_slice()
+    };
+    action_vec.extend(define_total);
     action_vec.extend(" edition".as_bytes());
     let action_bytes: Bytes = action_vec.into();
     if action_bytes != action {
