@@ -4,16 +4,16 @@ build:
 
 build-release:
 	cd contracts && cargo fmt
-	cp libs/* build/release/
+	cp c/build/ckb_smt build/release/
 	capsule build --release
 
 test:
 	cd contracts && cargo fmt
-	cp libs/* build/debug/
+	cp c/build/ckb_smt build/debug/
 	capsule test
 
 test-release:
-	cp libs/* build/release/
+	cp c/build/ckb_smt build/release/
 	capsule test --release
 
 clean:
