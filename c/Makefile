@@ -19,4 +19,7 @@ build/ckb_smt: ckb_smt.c
 all-via-docker:
 	docker run --rm -v `pwd`:/code ${BUILDER_DOCKER} bash -c "cd /code && make build/ckb_smt"
 
-.PHONY: all all-via-docker dist clean package-clean package publish
+clean:
+	rm -rf build/*
+
+.PHONY: all-via-docker build clean

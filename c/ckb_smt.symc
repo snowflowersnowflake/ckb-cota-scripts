@@ -1,7 +1,3 @@
-//
-// origin from:
-// https://github.com/lay2dev/ckb-lib-c-script/blob/main/c/ckb_smt.symc
-
 {
     ckb_smt_verify;
 };
