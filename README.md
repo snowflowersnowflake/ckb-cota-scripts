@@ -15,6 +15,14 @@ The Compact Token Aggregator Standard type scripts implement of [[RFC] CoTA: A C
 
 ## Getting Started
 
+Build the shared binary ckb_smt:
+```sh
+git submodule init && git submodule update -r --init
+cd c
+make all-via-docker
+cd ..
+```
+
 Build contracts:
 
 ```sh
