@@ -21,6 +21,18 @@ jobs:
           docker_channel: nightly
           docker_nightly_version: snapshot-20201008
 
+      - name: Init submodules
+        uses: srt32/git-actions@v0.0.3
+        with:
+          args: git submodule init && git submodule update -r --init
+
+      - name: Build shared binary
+        run: |
+          cd c
+          sudo chmod -R a+rw ./build
+          make all-via-docker
+          cd ..
+
       - name: Install Capsule
         env:
           CAPSULE_VERSION: v0.7.0
