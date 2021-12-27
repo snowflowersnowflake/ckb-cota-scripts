@@ -98,10 +98,13 @@ fn generate_withdrawal_cota_nft_smt_data(
         let key = H256::from(withdrawal_key_bytes);
         withdrawal_keys.push(withdrawal_key);
 
+        let to_lock_bytes = BytesBuilder::default()
+            .set(to_lock.as_slice().iter().map(|v| Byte::from(*v)).collect())
+            .build();
         let withdrawal_value = WithdrawalCotaNFTValueBuilder::default()
             .nft_info(hold_value)
             .out_point(OutPointSlice::from_slice(&cota_input_out_point.as_slice()[12..]).unwrap())
-            .to(LockHashSlice::from_slice(&to_lock.calc_script_hash().as_slice()[0..20]).unwrap())
+            .to_lock(to_lock_bytes)
             .build();
         let value = H256::from(blake2b_256(withdrawal_value.as_slice()));
         withdrawal_values.push(withdrawal_value.clone());
