@@ -5,5 +5,5 @@ edition = "2018"
 
 [dependencies]
 ckb-std = "0.9.0"
-ckb-lib-smt = {package = "ckb-lib-smt", git = "https://github.com/lay2dev/ckb-lib-c-script", branch = "main"}
+ckb-lib-smt = {package = "ckb-lib-smt", git = "https://github.com/nervina-labs/ckb-lib-c-script", branch = "main"}
 cota-smt = {package = "cota-smt", git = "https://github.com/nervina-labs/cota-smt", rev = "6cdc2ae", default_features = false, features = ["no-std"] }

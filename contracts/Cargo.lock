@@ -390,7 +390,7 @@ dependencies = [
 [[package]]
 name = "ckb-lib-smt"
 version = "0.1.1"
-source = "git+https://github.com/lay2dev/ckb-lib-c-script?branch=main#4c17bb4ca5b6da3ddd5e0f1b145535d122a1f633"
+source = "git+https://github.com/nervina-labs/ckb-lib-c-script?branch=main#4c17bb4ca5b6da3ddd5e0f1b145535d122a1f633"
 dependencies = [
  "blake2b-rs 0.2.0",
  "cc",
