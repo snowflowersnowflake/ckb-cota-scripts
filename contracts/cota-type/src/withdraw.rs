@@ -7,7 +7,7 @@ use ckb_std::{
     high_level::{load_cell_data, load_input_out_point},
 };
 use core::result::Result;
-use cota_smt::common::{CotaNFTInfo, LockHashSlice};
+use cota_smt::common::CotaNFTInfo;
 use cota_smt::smt::blake2b_256;
 use cota_smt::transfer::WithdrawalCotaNFTEntries;
 use script_utils::constants::{
@@ -18,10 +18,10 @@ use script_utils::helper::u16_from_slice;
 use script_utils::nft::Nft;
 use script_utils::{constants::BYTE32_ZEROS, error::Error, smt::LibCKBSmt};
 
-fn check_nft_transferable(hold_value: &CotaNFTInfo, to: LockHashSlice) -> Result<(), Error> {
+fn check_nft_transferable(hold_value: &CotaNFTInfo, to_lock: &[u8]) -> Result<(), Error> {
     let nft = Nft::from_data(hold_value.as_slice())?;
     let input_compact_nft_lock = load_cell_lock_hash(0, Source::GroupInput)?;
-    if &input_compact_nft_lock[0..20] != to.as_slice() {
+    if &input_compact_nft_lock != to_lock {
         if nft.is_locked() {
             return Err(Error::CoTALockedNFTCannotTransfer);
         }
@@ -35,35 +35,25 @@ fn check_nft_transferable(hold_value: &CotaNFTInfo, to: LockHashSlice) -> Result
     Ok(())
 }
 
-const FIXED_ACTION_LEN: usize = 40;
 fn check_withdraw_action(withdraw_entries: &WithdrawalCotaNFTEntries) -> Result<(), Error> {
     if withdraw_entries.hold_keys().len() != 1 {
         return Ok(());
     }
     let action = withdraw_entries.action().raw_data().to_vec();
-    if action.len() <= FIXED_ACTION_LEN {
-        return Err(Error::CoTANFTActionError);
-    }
-    let receiver_lock_bytes = &action[FIXED_ACTION_LEN..];
-    let receiver_lock_hash = blake2b_256(receiver_lock_bytes);
-    let withdrawal_value = withdraw_entries
-        .withdrawal_values()
-        .get(0)
-        .ok_or(Error::Encoding)?;
-    if &receiver_lock_hash[0..20] != withdrawal_value.to().as_slice() {
-        return Err(Error::CoTANFTActionError);
-    }
-
     let withdrawal_key = withdraw_entries
         .withdrawal_keys()
         .get(0)
         .ok_or(Error::Encoding)?;
-    let cota_id = withdrawal_key.cota_id().as_slice().to_vec();
+    let withdrawal_value = withdraw_entries
+        .withdrawal_values()
+        .get(0)
+        .ok_or(Error::Encoding)?;
+
     let mut action_vec: Vec<u8> = Vec::new();
     action_vec.extend("Transfer an NFT ".as_bytes());
-    action_vec.extend(cota_id);
+    action_vec.extend(withdrawal_key.cota_id().as_slice());
     action_vec.extend(" to ".as_bytes());
-    action_vec.extend(receiver_lock_bytes);
+    action_vec.extend(withdrawal_value.to_lock().raw_data().to_vec());
     if action_vec != action {
         return Err(Error::CoTANFTActionError);
     }
@@ -114,7 +104,7 @@ pub fn verify_cota_withdraw_smt(witness_args_input_type: Bytes) -> Result<(), Er
             .hold_values()
             .get(index)
             .ok_or(Error::Encoding)?;
-        check_nft_transferable(&hold_value, withdrawal_value.to())?;
+        check_nft_transferable(&hold_value, withdrawal_value.to_lock().as_slice())?;
         if hold_value.as_slice() != withdrawal_value.nft_info().as_slice() {
             return Err(Error::CoTAWithdrawalNFTInfoError);
         }

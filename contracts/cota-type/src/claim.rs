@@ -1,5 +1,5 @@
 use alloc::vec::Vec;
-use ckb_std::high_level::{load_cell_data, load_cell_lock_hash};
+use ckb_std::high_level::{load_cell_data, load_cell_lock};
 use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, packed::*, prelude::*},
@@ -7,7 +7,7 @@ use ckb_std::{
     high_level::load_cell,
 };
 use core::result::Result;
-use cota_smt::common::{LockHashSlice, WithdrawalCotaNFTValueBuilder};
+use cota_smt::common::{BytesBuilder, WithdrawalCotaNFTValueBuilder};
 use cota_smt::smt::blake2b_256;
 use cota_smt::transfer::ClaimCotaNFTEntries;
 use script_utils::constants::{
@@ -59,7 +59,7 @@ pub fn verify_cota_claim_smt(
     let claimed_count = claim_entries.claim_keys().len() as u32;
     check_claim_action(claim_entries.action().raw_data(), claimed_count)?;
 
-    let to_lock_hash_160 = &load_cell_lock_hash(0, Source::GroupOutput)?[0..20];
+    let to_lock_script = load_cell_lock(0, Source::GroupOutput)?;
 
     let mut withdrawal_keys: Vec<u8> = Vec::new();
     let mut withdrawal_values: Vec<u8> = Vec::new();
@@ -107,10 +107,14 @@ pub fn verify_cota_claim_smt(
         withdrawal_keys.extend(&BYTE6_ZEROS);
 
         // collect withdrawal values for withdrawal smt proof
-        let to = LockHashSlice::from_slice(to_lock_hash_160).map_err(|_e| Error::Encoding)?;
+        let to_lock = to_lock_script
+            .as_slice()
+            .iter()
+            .map(|v| Byte::from(*v))
+            .collect();
         let withdrawal_cota_value = WithdrawalCotaNFTValueBuilder::default()
             .nft_info(hold_value)
-            .to(to)
+            .to_lock(BytesBuilder::default().set(to_lock).build())
             .out_point(claimed_key.out_point())
             .build();
         withdrawal_values.extend(&blake2b_256(withdrawal_cota_value.as_slice()));
